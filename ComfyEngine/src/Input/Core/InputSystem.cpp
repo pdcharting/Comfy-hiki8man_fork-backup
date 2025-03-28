@@ -10,6 +10,7 @@
 #include "Core/Win32LeanWindowsHeader.h"
 #include <dinput.h>
 #include <bitset>
+#include <algorithm>
 
 namespace Comfy::Input
 {

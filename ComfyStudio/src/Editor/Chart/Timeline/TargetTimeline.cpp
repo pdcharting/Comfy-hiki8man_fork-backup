@@ -1,3 +1,4 @@
+#include <iterator>
 #include "TargetTimeline.h"
 #include "Editor/Chart/ChartEditor.h"
 #include "Editor/Chart/ChartCommands.h"
