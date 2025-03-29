@@ -1438,7 +1438,7 @@ namespace Comfy::Studio::Editor
 			const auto[min, max] =
 				(target.Flags.IsChain || target.Flags.SameTypeSyncCount > 1) ? std::array { ButtonType::SlideL, ButtonType::SlideR } :
 				(target.Flags.IsHold) ? std::array { ButtonType::Triangle, ButtonType::Circle } :
-				std::array { ButtonType::Triangle, ButtonType::SlideR };
+				std::array { ButtonType::Triangle, ButtonType::Star };
 
 			return static_cast<ButtonType>(Clamp(static_cast<i32>(target.Type) + incrementDirection, static_cast<i32>(min), static_cast<i32>(max)));
 		}
