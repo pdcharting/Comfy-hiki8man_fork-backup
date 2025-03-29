@@ -14,6 +14,7 @@ namespace Comfy::Studio::Editor
 		Circle,
 		SlideL,
 		SlideR,
+		Star,
 		Count
 	};
 
@@ -27,6 +28,7 @@ namespace Comfy::Studio::Editor
 		ButtonTypeFlags_Circle = 1 << static_cast<u8>(ButtonType::Circle),
 		ButtonTypeFlags_SlideL = 1 << static_cast<u8>(ButtonType::SlideL),
 		ButtonTypeFlags_SlideR = 1 << static_cast<u8>(ButtonType::SlideR),
+		ButtonTypeFlags_Star = 1 << static_cast<u8>(ButtonType::Star),
 
 		ButtonTypeFlags_NormalAll = (ButtonTypeFlags_Triangle | ButtonTypeFlags_Square | ButtonTypeFlags_Cross | ButtonTypeFlags_Circle),
 		ButtonTypeFlags_SlideAll = (ButtonTypeFlags_SlideL | ButtonTypeFlags_SlideR),
@@ -60,10 +62,18 @@ namespace Comfy::Studio::Editor
 		TargetPropertyFlags_All = (TargetPropertyFlags_PositionXY | TargetPropertyFlags_Angle | TargetPropertyFlags_Frequency | TargetPropertyFlags_Amplitude | TargetPropertyFlags_Distance),
 	};
 
+	constexpr bool IsNormalButtonType(ButtonType type)
+	{
+		return (type == ButtonType::Triangle || type == ButtonType::Circle ||
+			type == ButtonType::Cross || type == ButtonType::Square);
+	}
+
 	constexpr bool IsSlideButtonType(ButtonType type)
 	{
 		return (type == ButtonType::SlideL || type == ButtonType::SlideR);
 	}
+
+	constexpr bool IsStarButtonType(ButtonType type) { return type == ButtonType::Star; }
 
 	constexpr ButtonType FlipSlideButtonType(ButtonType type)
 	{
@@ -140,7 +150,10 @@ namespace Comfy::Studio::Editor
 		u16 SameTypeSyncIndex : 4;
 		u16 SameTypeSyncCount : 4;
 
-		u16 /* Reserved */ : 8;
+		// NOTE: Publicly set flags:
+		u16 IsDouble : 1;
+		u16 IsLong : 1;
+		u16 /* Reserved */ : 6;
 	};
 
 	static_assert(sizeof(TargetFlags) == sizeof(u32));

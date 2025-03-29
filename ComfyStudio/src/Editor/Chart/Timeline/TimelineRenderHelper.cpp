@@ -22,6 +22,7 @@ namespace Comfy::Studio::Editor
 		sprites.ButtonIcons[static_cast<size_t>(ButtonType::Circle)] = findSprite("TIMELINE_CIRCLE");
 		sprites.ButtonIcons[static_cast<size_t>(ButtonType::SlideL)] = findSprite("TIMELINE_SLIDE_L");
 		sprites.ButtonIcons[static_cast<size_t>(ButtonType::SlideR)] = findSprite("TIMELINE_SLIDE_R");
+		sprites.ButtonIcons[static_cast<size_t>(ButtonType::Star)] = findSprite("TIMELINE_STAR");
 
 		sprites.ButtonIconsSync[static_cast<size_t>(ButtonType::Triangle)] = findSprite("TIMELINE_TRIANGLE_SYNC");
 		sprites.ButtonIconsSync[static_cast<size_t>(ButtonType::Square)] = findSprite("TIMELINE_SQUARE_SYNC");
@@ -29,11 +30,18 @@ namespace Comfy::Studio::Editor
 		sprites.ButtonIconsSync[static_cast<size_t>(ButtonType::Circle)] = findSprite("TIMELINE_CIRCLE_SYNC");
 		sprites.ButtonIconsSync[static_cast<size_t>(ButtonType::SlideL)] = findSprite("TIMELINE_SLIDE_L_SYNC");
 		sprites.ButtonIconsSync[static_cast<size_t>(ButtonType::SlideR)] = findSprite("TIMELINE_SLIDE_R_SYNC");
+		sprites.ButtonIconsSync[static_cast<size_t>(ButtonType::Star)] = findSprite("TIMELINE_STAR");
 
 		sprites.ButtonIconsFrag[static_cast<size_t>(ButtonType::SlideL)] = findSprite("TIMELINE_SLIDE_CHAIN_L");
 		sprites.ButtonIconsFrag[static_cast<size_t>(ButtonType::SlideR)] = findSprite("TIMELINE_SLIDE_CHAIN_R");
 		sprites.ButtonIconsFragSync[static_cast<size_t>(ButtonType::SlideL)] = findSprite("TIMELINE_SLIDE_CHAIN_L_SYNC");
 		sprites.ButtonIconsFragSync[static_cast<size_t>(ButtonType::SlideR)] = findSprite("TIMELINE_SLIDE_CHAIN_R_SYNC");
+
+		sprites.ButtonIconsDouble[static_cast<size_t>(ButtonType::Triangle)] = findSprite("TIMELINE_TRIANGLE_W");
+		sprites.ButtonIconsDouble[static_cast<size_t>(ButtonType::Circle)] = findSprite("TIMELINE_CIRCLE_W");
+		sprites.ButtonIconsDouble[static_cast<size_t>(ButtonType::Cross)] = findSprite("TIMELINE_CROSS_W");
+		sprites.ButtonIconsDouble[static_cast<size_t>(ButtonType::Square)] = findSprite("TIMELINE_SQUARE_W");
+		sprites.ButtonIconsDouble[static_cast<size_t>(ButtonType::Star)] = findSprite("TIMELINE_STAR_W");
 
 		sprites.HoldText = findSprite("TIMELINE_HOLD_TEXT");
 		sprites.HoldTextSync = findSprite("TIMELINE_HOLD_TEXT_SYNC");
@@ -67,6 +75,11 @@ namespace Comfy::Studio::Editor
 				drawList->AddText(Gui::GetFont(), 12.0f, position + vec2(-12.0f, 0.0f), color, "HOLD");
 		}
 
+#if COMFY_DEBUG && 0 // DEBUG: DOUBLE FLAG TEST
+		if (target.Flags.IsDouble)
+			drawList->AddText(Gui::GetFont(), 12.0f, position + vec2(-12.0f, 0.0f), color, "DOUBLE");
+#endif
+
 #if COMFY_DEBUG && 0 // DEBUG: CHAIN FLAG TEST
 		if (target.Flags.IsChainStart)
 			drawList->AddCircle(position, 14.0f, 0xFFFFFF00);
@@ -86,12 +99,14 @@ namespace Comfy::Studio::Editor
 		const auto typeIndex = static_cast<u8>(target.Type);
 		const bool isSync = target.Flags.IsSync;
 		bool isFrag = (target.Flags.IsChain && !target.Flags.IsChainStart);
+		bool isDouble = target.Flags.IsDouble;
 
 		// NOTE: This does not match the correct behavior as used in the render window but should avoid confusion between single fragment chains and normal slides
 		if (target.Flags.IsChainStart && target.Flags.IsChainEnd)
 			isFrag = true;
 
 		const auto& typesArray =
+			isDouble ? sprites.ButtonIconsDouble :
 			isFrag ? isSync ? sprites.ButtonIconsFragSync : sprites.ButtonIconsFrag :
 			isSync ? sprites.ButtonIconsSync : sprites.ButtonIcons;
 

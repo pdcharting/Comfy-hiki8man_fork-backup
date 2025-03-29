@@ -271,6 +271,8 @@ namespace Comfy::Studio::Editor
 				registerTypeLayer(ButtonType::Circle, "target_maru", layers.Targets);
 				registerTypeLayer(ButtonType::SlideL, "target_slide18_l", layers.Targets);
 				registerTypeLayer(ButtonType::SlideR, "target_slide18_r", layers.Targets);
+				registerTypeLayer(ButtonType::Star, "target_touch", layers.Targets);
+
 				registerTypeLayer(ButtonType::SlideL, "target_slide18b_l", layers.TargetsHit);
 				registerTypeLayer(ButtonType::SlideR, "target_slide18b_r", layers.TargetsHit);
 				registerTypeLayer(ButtonType::SlideL, "target_slide26_l", layers.TargetsFrag);
@@ -302,6 +304,7 @@ namespace Comfy::Studio::Editor
 				registerTypeLayer(ButtonType::Circle, "target_sp_maru", layers.TargetsChance);
 				registerTypeLayer(ButtonType::SlideL, "target_sp_slide18_l", layers.TargetsChance);
 				registerTypeLayer(ButtonType::SlideR, "target_sp_slide18_r", layers.TargetsChance);
+				registerTypeLayer(ButtonType::Star, "target_touch_ch", layers.TargetsChance);
 
 				registerTypeLayer(ButtonType::Triangle, "target_sp_sankaku_hold", layers.TargetsChanceHold);
 				registerTypeLayer(ButtonType::Square, "target_sp_shikaku_hold", layers.TargetsChanceHold);
@@ -324,12 +327,20 @@ namespace Comfy::Studio::Editor
 				registerTypeLayer(ButtonType::SlideL, "target_sp_slide18_l_synchold", layers.TargetsChanceSyncHold);
 				registerTypeLayer(ButtonType::SlideR, "target_sp_slide18_r_synchold", layers.TargetsChanceSyncHold);
 
+				registerTypeLayer(ButtonType::Triangle, "target_up_w",    layers.TargetsDouble);
+				registerTypeLayer(ButtonType::Circle,   "target_right_w", layers.TargetsDouble);
+				registerTypeLayer(ButtonType::Cross,    "target_down_w",  layers.TargetsDouble);
+				registerTypeLayer(ButtonType::Square,   "target_left_w",  layers.TargetsDouble);
+				registerTypeLayer(ButtonType::Star,     "target_touch_w", layers.TargetsDouble);
+
 				registerTypeLayer(ButtonType::Triangle, "button_sankaku", layers.Buttons);
 				registerTypeLayer(ButtonType::Square, "button_shikaku", layers.Buttons);
 				registerTypeLayer(ButtonType::Cross, "button_batsu", layers.Buttons);
 				registerTypeLayer(ButtonType::Circle, "button_maru", layers.Buttons);
 				registerTypeLayer(ButtonType::SlideL, "button_slide18_l", layers.Buttons);
 				registerTypeLayer(ButtonType::SlideR, "button_slide18_r", layers.Buttons);
+				registerTypeLayer(ButtonType::Star, "button_touch", layers.Buttons);
+
 				registerTypeLayer(ButtonType::SlideL, "button_slide25_l", layers.ButtonsFrag);
 				registerTypeLayer(ButtonType::SlideR, "button_slide25_r", layers.ButtonsFrag);
 
@@ -359,6 +370,12 @@ namespace Comfy::Studio::Editor
 				registerTypeLayer(ButtonType::SlideR, "white_slide_l18_r", layers.ButtonShadowsWhite);
 				registerTypeLayer(ButtonType::SlideL, "white_slide_s25_l", layers.ButtonShadowsWhiteFrag);
 				registerTypeLayer(ButtonType::SlideR, "white_slide_s25_r", layers.ButtonShadowsWhiteFrag);
+
+				registerTypeLayer(ButtonType::Triangle, "button_up_w",    layers.ButtonsDouble);
+				registerTypeLayer(ButtonType::Circle,   "button_right_w", layers.ButtonsDouble);
+				registerTypeLayer(ButtonType::Cross,    "button_down_w",  layers.ButtonsDouble);
+				registerTypeLayer(ButtonType::Square,   "button_left_w",  layers.ButtonsDouble);
+				registerTypeLayer(ButtonType::Star,     "button_touch_w", layers.ButtonsDouble);
 
 				videos.TargetHand = findVideo(*aetGameCommon, "GAM_CMN_TARGET_HAND");
 			}
@@ -1007,6 +1024,9 @@ namespace Comfy::Studio::Editor
 		{
 			auto getLayerArray = [this](const TargetData& data) -> auto&
 			{
+				if (data.Double)
+					return layers.TargetsDouble;
+
 				if (data.ChainHit)
 					return !data.ChainStart ? layers.TargetsFragHit : layers.TargetsHit;
 
@@ -1055,6 +1075,9 @@ namespace Comfy::Studio::Editor
 		{
 			auto getLayerArray = [this](const ButtonData& data) -> auto&
 			{
+				if (data.Double)
+					return layers.ButtonsDouble;
+
 				if (data.Chain && !data.ChainStart)
 					return data.Sync ? layers.ButtonsFragSync : layers.ButtonsFrag;
 
@@ -1489,6 +1512,7 @@ namespace Comfy::Studio::Editor
 				TargetsChanceHold,
 				TargetsChanceSync,
 				TargetsChanceSyncHold,
+				TargetsDouble,
 				Buttons,
 				ButtonsFrag,
 				ButtonsSync,
@@ -1496,7 +1520,8 @@ namespace Comfy::Studio::Editor
 				ButtonShadowsBlack,
 				ButtonShadowsBlackFrag,
 				ButtonShadowsWhite,
-				ButtonShadowsWhiteFrag;
+				ButtonShadowsWhiteFrag,
+				ButtonsDouble;
 
 			std::shared_ptr<Aet::Layer>
 				PracticeLevelInfoEasy,

@@ -100,7 +100,7 @@ namespace Comfy::Studio::Editor
 			void(*WriteFunc)(IO::StreamWriter&, const TimelineTarget&);
 		};
 
-		constexpr std::array<TargetField, 11> TargetFields =
+		constexpr std::array<TargetField, 13> TargetFields =
 		{
 			TargetField { "Tick", sizeof(i32), [](IO::StreamReader& r, TimelineTarget& t) { t.Tick = BeatTick(r.ReadI32()); }, [](IO::StreamWriter& writer, const TimelineTarget& target) { writer.WriteI32(target.Tick.Ticks()); } },
 			TargetField { "Type", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Type = static_cast<ButtonType>(r.ReadU8()); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(static_cast<u8>(t.Type)); } },
@@ -108,6 +108,8 @@ namespace Comfy::Studio::Editor
 			TargetField { "Hold", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Flags.IsHold = r.ReadU8(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(t.Flags.IsHold); } },
 			TargetField { "Chain", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Flags.IsChain = r.ReadU8(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(t.Flags.IsChain); } },
 			TargetField { "Chance", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Flags.IsChance = r.ReadU8(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(t.Flags.IsChance); } },
+			TargetField { "Double", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Flags.IsDouble = r.ReadU8(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(t.Flags.IsDouble); } },
+			TargetField { "Long", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Flags.IsLong = r.ReadU8(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(t.Flags.IsLong); } },
 			TargetField { "Position", sizeof(vec2), [](IO::StreamReader& r, TimelineTarget& t) { t.Properties.Position = r.ReadV2(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteF32(t.Properties.Position.x); w.WriteF32(t.Properties.Position.y); } },
 			TargetField { "Angle", sizeof(f32), [](IO::StreamReader& r, TimelineTarget& t) { t.Properties.Angle = r.ReadF32(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteF32(t.Properties.Angle); } },
 			TargetField { "Frequency", sizeof(f32), [](IO::StreamReader& r, TimelineTarget& t) { t.Properties.Frequency = r.ReadF32(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteF32(t.Properties.Frequency); } },
@@ -877,7 +879,9 @@ namespace Comfy::Studio::Editor
 		chart.Scale.ButtonTypeNames.emplace_back("SlideL");
 		static_assert(static_cast<u8>(ButtonType::SlideR) == 5);
 		chart.Scale.ButtonTypeNames.emplace_back("SlideR");
-		static_assert(static_cast<u8>(EnumCount<ButtonType>()) == 6);
+		static_assert(static_cast<u8>(ButtonType::Star) == 6);
+		chart.Scale.ButtonTypeNames.emplace_back("Star");
+		static_assert(static_cast<u8>(EnumCount<ButtonType>()) == 7);
 
 		chart.Scale.TicksPerBeat = BeatTick::TicksPerBeat;
 		chart.Scale.PlacementAreaSize = Rules::PlacementAreaSize;

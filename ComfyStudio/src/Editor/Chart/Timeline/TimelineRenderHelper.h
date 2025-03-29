@@ -29,7 +29,9 @@ namespace Comfy::Studio::Editor
 				ButtonIcons,
 				ButtonIconsSync,
 				ButtonIconsFrag,
-				ButtonIconsFragSync;
+				ButtonIconsFragSync,
+				ButtonIconsDouble,
+				ButtonIconsLong;
 
 			const Graphics::Spr
 				*HoldText,

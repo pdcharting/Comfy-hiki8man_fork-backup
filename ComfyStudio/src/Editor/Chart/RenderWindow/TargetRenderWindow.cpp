@@ -601,6 +601,8 @@ namespace Comfy::Studio::Editor
 				targetData.ChainStart = target.Flags.IsChainStart;
 				targetData.ChainHit = (target.Flags.IsChain && ((buttonTick - cursorTick) <= chainHitTickThreshold));
 				targetData.Chance = target.Flags.IsChance;
+				targetData.Double = target.Flags.IsDouble;
+				targetData.Long = target.Flags.IsLong;
 				targetData.Position = properties.Position;
 				targetData.Progress = progress;
 				targetData.Scale = 1.0f;
@@ -613,6 +615,8 @@ namespace Comfy::Studio::Editor
 					buttonData.Sync = targetData.Sync;
 					buttonData.Chain = targetData.Chain;
 					buttonData.ChainStart = targetData.ChainStart;
+					buttonData.Double = targetData.Double;
+					buttonData.Long = targetData.Long;
 					buttonData.Shadow = TargetRenderHelper::ButtonShadowType::Black;
 					buttonData.Position = GetButtonPathSinePoint(progress, properties);
 					buttonData.Progress = progress;

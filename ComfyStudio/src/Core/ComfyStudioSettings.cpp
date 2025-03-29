@@ -855,6 +855,7 @@ namespace Comfy::Studio
 			{ ButtonType::Circle, "circle", },
 			{ ButtonType::SlideL, "slide_l", },
 			{ ButtonType::SlideR, "slide_r", },
+			{ ButtonType::Star, "star" }
 		};
 		static_assert(Json::CompileTimeValidateEnumNameMappingTable(ButtonTypeEnumNames));
 

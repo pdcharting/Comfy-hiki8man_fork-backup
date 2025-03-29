@@ -15,6 +15,9 @@ namespace Comfy::Studio::Editor
 		ChainSlideSuccess,
 		ChainSlideFailure,
 		SlideTouch,
+		NormalW,
+		Star,
+		StarW,
 		Count,
 	};
 
@@ -39,8 +42,10 @@ namespace Comfy::Studio::Editor
 	public:
 		void SetIDs(u32 buttonID, u32 slideID, u32 chainSlideID, u32 sliderTouchID);
 
+		
 		void PlayButtonSound(TimeSpan startTime = TimeSpan::Zero(), std::optional<TimeSpan> externalClock = {});
 		void PlaySlideSound(TimeSpan startTime = TimeSpan::Zero(), std::optional<TimeSpan> externalClock = {});
+		void PlayStarSound(TimeSpan startTime = TimeSpan::Zero(), std::optional<TimeSpan> externalClock = {});
 
 		void PlayChainSoundStart(ChainSoundSlot slot, TimeSpan startTime = TimeSpan::Zero(), std::optional<TimeSpan> externalClock = {});
 		void PlayChainSoundSuccess(ChainSoundSlot slot, TimeSpan startTime = TimeSpan::Zero(), std::optional<TimeSpan> externalClock = {});

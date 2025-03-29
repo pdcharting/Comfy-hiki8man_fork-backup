@@ -289,6 +289,10 @@ namespace Comfy::Studio::Editor
 						buttonSoundController.FadeOutLastChainSound(chainSoundSlot, startTime);
 					}
 				}
+				else if (IsStarButtonType(target.Type))
+				{
+					buttonSoundController.PlayStarSound(startTime, externalClock);
+				}
 				else if (IsSlideButtonType(target.Type))
 				{
 					buttonSoundController.PlaySlideSound(startTime, externalClock);
@@ -1421,6 +1425,10 @@ namespace Comfy::Studio::Editor
 
 		if (Input::IsAnyPressed(GlobalUserData.Input.TargetTimeline_ToggleTargetHolds, false))
 			ToggleSelectedTargetsHolds(undoManager, *workingChart);
+
+		// TODO: Add keybind for these
+		if (Input::IsKeyPressed(Comfy::Input::KeyCode_B, false))
+			ToggleSelectedTargetsDoubles(undoManager, *workingChart);
 	}
 
 	namespace
@@ -1756,6 +1764,10 @@ namespace Comfy::Studio::Editor
 		if (Input::IsAnyPressed(GlobalUserData.Input.TargetTimeline_PlaceSlideR, false, Input::ModifierBehavior_Relaxed))
 			onButtonTypePressed(ButtonType::SlideR);
 
+		// TODO: Add keybind for this
+		if (Input::IsKeyPressed(Comfy::Input::KeyCode_L, false))
+			onButtonTypePressed(ButtonType::Star);
+
 		if (Input::IsAnyPressed(GlobalUserData.Input.TargetTimeline_DeleteSelection, false))
 			RemoveAllSelectedTargets(undoManager, *workingChart);
 	}
@@ -2025,7 +2037,8 @@ namespace Comfy::Studio::Editor
 
 		for (const auto& target : workingChart->Targets)
 		{
-			if (!target.IsSelected || IsSlideButtonType(target.Type))
+			// TODO: Disable IsDouble and IsLong rather than just not doing anything
+			if (!target.IsSelected || !IsNormalButtonType(target.Type) || target.Flags.IsDouble || target.Flags.IsLong)
 				continue;
 
 			auto& data = commandData.emplace_back();
@@ -2055,6 +2068,28 @@ namespace Comfy::Studio::Editor
 			}
 
 			undoManager.Execute<ToggleTargetListIsHold>(*workingChart, std::move(commandData));
+		}
+	}
+
+	void TargetTimeline::ToggleSelectedTargetsDoubles(Undo::UndoManager& undoManager, Chart& chart)
+	{
+		const size_t selectedTargetCount = CountSelectedTargets();
+		if (selectedTargetCount < 1)
+			return;
+
+		// TODO: Make undo compliant
+
+		for (auto& target : workingChart->Targets)
+		{
+			if (!target.IsSelected || (!IsNormalButtonType(target.Type) && !IsStarButtonType(target.Type)))
+				continue;
+
+			if (!target.Flags.IsLong)
+			{
+				target.Flags.IsDouble = !target.Flags.IsDouble;
+				target.Flags.IsChance = false;
+				target.Flags.IsHold = false;
+			}
 		}
 	}
 
@@ -2401,7 +2436,9 @@ namespace Comfy::Studio::Editor
 
 	void TargetTimeline::PlayTargetButtonTypeSound(ButtonType type)
 	{
-		if (IsSlideButtonType(type))
+		if (IsStarButtonType(type))
+			buttonSoundController.PlayStarSound();
+		else if (IsSlideButtonType(type))
 			buttonSoundController.PlaySlideSound();
 		else
 			buttonSoundController.PlayButtonSound();

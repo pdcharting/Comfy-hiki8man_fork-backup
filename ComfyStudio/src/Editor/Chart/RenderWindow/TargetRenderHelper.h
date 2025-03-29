@@ -125,6 +125,8 @@ namespace Comfy::Studio::Editor
 			bool ChainStart;
 			bool ChainHit;
 			bool Chance;
+			bool Double;
+			bool Long;
 			vec2 Position;
 			f32 Progress;
 			f32 Scale;
@@ -142,6 +144,8 @@ namespace Comfy::Studio::Editor
 			bool Sync;
 			bool Chain;
 			bool ChainStart;
+			bool Double;
+			bool Long;
 			vec2 Position;
 			f32 Progress;
 			f32 Scale;
