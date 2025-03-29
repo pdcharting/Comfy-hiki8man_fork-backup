@@ -144,6 +144,7 @@ namespace Comfy::Studio::Editor
 			bool Sync;
 			bool Chain;
 			bool ChainStart;
+			bool Chance;
 			bool Double;
 			bool Long;
 			vec2 Position;

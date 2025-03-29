@@ -615,6 +615,7 @@ namespace Comfy::Studio::Editor
 					buttonData.Sync = targetData.Sync;
 					buttonData.Chain = targetData.Chain;
 					buttonData.ChainStart = targetData.ChainStart;
+					buttonData.Chance = targetData.Chance;
 					buttonData.Double = targetData.Double;
 					buttonData.Long = targetData.Long;
 					buttonData.Shadow = TargetRenderHelper::ButtonShadowType::Black;

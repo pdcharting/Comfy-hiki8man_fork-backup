@@ -353,6 +353,14 @@ namespace Comfy::Studio::Editor
 				registerTypeLayer(ButtonType::SlideL, "button_slide25_l_sync", layers.ButtonsFragSync);
 				registerTypeLayer(ButtonType::SlideR, "button_slide25_r_sync", layers.ButtonsFragSync);
 
+				registerTypeLayer(ButtonType::Triangle, "button_sankaku",   layers.ButtonsChance);
+				registerTypeLayer(ButtonType::Square,   "button_shikaku",   layers.ButtonsChance);
+				registerTypeLayer(ButtonType::Cross,    "button_batsu",     layers.ButtonsChance);
+				registerTypeLayer(ButtonType::Circle,   "button_maru",      layers.ButtonsChance);
+				registerTypeLayer(ButtonType::SlideL,   "button_slide18_l", layers.ButtonsChance);
+				registerTypeLayer(ButtonType::SlideR,   "button_slide18_r", layers.ButtonsChance);
+				registerTypeLayer(ButtonType::Star,     "button_touch_ch",  layers.ButtonsChance);
+
 				registerTypeLayer(ButtonType::Triangle, "shadow_sankaku", layers.ButtonShadowsBlack);
 				registerTypeLayer(ButtonType::Square, "shadow_shikaku", layers.ButtonShadowsBlack);
 				registerTypeLayer(ButtonType::Cross, "shadow_batsu", layers.ButtonShadowsBlack);
@@ -1078,6 +1086,9 @@ namespace Comfy::Studio::Editor
 				if (data.Double)
 					return layers.ButtonsDouble;
 
+				if (data.Chance)
+					return layers.ButtonsChance;
+
 				if (data.Chain && !data.ChainStart)
 					return data.Sync ? layers.ButtonsFragSync : layers.ButtonsFrag;
 
@@ -1517,6 +1528,7 @@ namespace Comfy::Studio::Editor
 				ButtonsFrag,
 				ButtonsSync,
 				ButtonsFragSync,
+				ButtonsChance,
 				ButtonShadowsBlack,
 				ButtonShadowsBlackFrag,
 				ButtonShadowsWhite,
