@@ -219,6 +219,36 @@ namespace Comfy::Studio::Editor
 		return foundIndex;
 	}
 
+	TimelineTarget* SortedTargetList::FindNext(const TimelineTarget& target)
+	{
+		if (target.NextID == TimelineTargetID::Null)
+			return nullptr;
+
+		if (i32 index = FindIndex(target.NextID); index != -1)
+			return &targets[index];
+
+		return nullptr;
+	}
+
+	TimelineTarget* SortedTargetList::FindPrevious(const TimelineTarget& target)
+	{
+		if (target.PreviousID == TimelineTargetID::Null)
+			return nullptr;
+
+		if (i32 index = FindIndex(target.PreviousID); index != -1)
+			return &targets[index];
+
+		return nullptr;
+	}
+
+	TimelineTarget* SortedTargetList::FindNextOrPrevious(const TimelineTarget& target)
+	{
+		TimelineTarget* next = FindNext(target);
+		if (next != nullptr)
+			return next;
+		return FindPrevious(target);
+	}
+
 	Comfy::Studio::Editor::BeatTick SortedTargetList::GetLengthInTicks(const TimelineTarget& target)
 	{
 		if (target.IsLongStart() && static_cast<i32>(target.NextID) != 0)

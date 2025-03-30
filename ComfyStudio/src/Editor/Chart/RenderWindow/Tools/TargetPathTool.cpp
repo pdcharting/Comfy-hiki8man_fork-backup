@@ -510,26 +510,22 @@ namespace Comfy::Studio::Editor
 			auto prevDataIt = beginIt;
 			auto thisDataIt = beginIt + 1;
 
-			if (angleIncrement.UseFixedStepIncrement)
+			std::unordered_map<TimelineTargetID, f32> copiedAngles;
+
+			while (thisDataIt != endIt)
 			{
-				while (thisDataIt != endIt)
+				const TimelineTarget& thisTarget = chart.Targets[chart.Targets.FindIndex(thisDataIt->ID)];
+
+				if (angleIncrement.UseFixedStepIncrement)
 				{
-					const auto& thisTarget = chart.Targets[chart.Targets.FindIndex(thisDataIt->ID)];
 					const f32 finalIncrement = (!angleIncrement.ApplyToChainSlides && thisTarget.Flags.IsChain && !thisTarget.Flags.IsChainStart) ?
 						0.0f : (-angleIncrement.FixedStepIncrementPerTarget * direction);
 
 					thisDataIt->NewValue.Angle = Rules::NormalizeAngle(prevDataIt->NewValue.Angle + finalIncrement);
-
-					prevDataIt++;
-					thisDataIt++;
 				}
-			}
-			else
-			{
-				while (thisDataIt != endIt)
+				else
 				{
 					const auto& prevTarget = chart.Targets[chart.Targets.FindIndex(prevDataIt->ID)];
-					const auto& thisTarget = chart.Targets[chart.Targets.FindIndex(thisDataIt->ID)];
 
 					const auto tickDifference = (prevTarget.Tick - thisTarget.Tick);
 
@@ -542,10 +538,22 @@ namespace Comfy::Studio::Editor
 						0.0f : (tickDifference.BeatsFraction() * incrementPerBeat * direction);
 
 					thisDataIt->NewValue.Angle = Rules::NormalizeAngle(prevDataIt->NewValue.Angle + finalIncrement);
-
-					prevDataIt++;
-					thisDataIt++;
 				}
+
+				if (thisTarget.Flags.IsLong)
+				{
+					if (auto it = copiedAngles.find(thisTarget.ID); it != copiedAngles.end())
+						thisDataIt->NewValue.Angle = it->second;
+					else
+					{
+						TimelineTarget* nextOrPrev = chart.Targets.FindNextOrPrevious(thisTarget);
+						if (nextOrPrev != nullptr)
+							copiedAngles[nextOrPrev->ID] = thisDataIt->NewValue.Angle;
+					}
+				}
+
+				prevDataIt++;
+				thisDataIt++;
 			}
 		};
 
