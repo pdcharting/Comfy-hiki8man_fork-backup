@@ -433,6 +433,7 @@ namespace Comfy::Studio::Editor
 		std::vector<InterpolateTargetListAngles::Data> targetData;
 		targetData.reserve(selectionCount);
 
+		std::unordered_map<TimelineTargetID, f32> copiedAngles;
 		for (const auto& target : chart.Targets)
 		{
 			if (!target.IsSelected)
@@ -442,6 +443,19 @@ namespace Comfy::Studio::Editor
 			auto& data = targetData.emplace_back();
 			data.ID = target.ID;
 			data.NewValue.Angle = Rules::NormalizeAngle(((1.0f - t) * startAngle) + (t * endAngle));
+
+			if (auto it = copiedAngles.find(target.ID); it != copiedAngles.end())
+			{
+				data.NewValue.Angle = it->second;
+				continue;
+			}
+
+			if (target.Flags.IsLong)
+			{
+				TimelineTarget* nextOrPrev = chart.Targets.FindNextOrPrevious(target);
+				if (nextOrPrev != nullptr)
+					copiedAngles[nextOrPrev->ID] = data.NewValue.Angle;
+			}
 		}
 
 		undoManager.DisallowMergeForLastCommand();
@@ -511,6 +525,14 @@ namespace Comfy::Studio::Editor
 			auto thisDataIt = beginIt + 1;
 
 			std::unordered_map<TimelineTargetID, f32> copiedAngles;
+			// NOTE: Push the first selected note's angle to the angles map if it's a long start,
+			//       otherwise the end note would be affected
+			if (beginIt != endIt)
+			{
+				const TimelineTarget& target = chart.Targets[chart.Targets.FindIndex(beginIt->ID)];
+				if (target.IsLongStart() && target.NextID != TimelineTargetID::Null)
+					copiedAngles[target.NextID] = beginIt->NewValue.Angle;
+			}
 
 			while (thisDataIt != endIt)
 			{
