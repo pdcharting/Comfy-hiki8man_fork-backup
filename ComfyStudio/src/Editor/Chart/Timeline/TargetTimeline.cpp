@@ -1120,33 +1120,69 @@ namespace Comfy::Studio::Editor
 		}
 	}
 
+	bool TargetTimeline::CalculateTargetDrawParam(const TimelineTarget& target, vec2* pCenter, f32* pScale, f32* pOpacity)
+	{
+		const auto buttonTime = TickToTime(target.Tick);
+		const f32 screenX = glm::round(GetTimelinePosition(buttonTime) - GetScrollX());
+		const auto visiblity = GetTimelineVisibility(screenX);
+
+		const size_t buttonIndex = static_cast<size_t>(target.Type);
+		const vec2 center = vec2(screenX + regions.Content.GetTL().x, targetYPositions[buttonIndex]);
+		const f32 scale = GetTimelineTargetScaleFactor(target, buttonTime) * iconScale;
+
+		const bool tooEarly = (target.Tick < BeatTick::FromBars(1));
+		const bool isSelected = target.IsSelected;
+
+		constexpr f32 tooEarlyOpacity = 0.5f, selectionOpacity = 0.75f;
+		const f32 edgeFadeOpacity = GetButtonEdgeFadeOpacity(screenX);
+		const f32 finalOpacity = tooEarly ? tooEarlyOpacity : isSelected ? (edgeFadeOpacity * selectionOpacity) : edgeFadeOpacity;
+
+		if (pCenter) *pCenter = center;
+		if (pScale) *pScale = scale;
+		if (pOpacity) *pOpacity = finalOpacity;
+
+		return visiblity == TimelineVisibility::Visible;
+	}
+
 	void TargetTimeline::DrawTimelineTargets()
 	{
 		auto* windowDrawList = Gui::GetWindowDrawList();
 
+		// NOTE: Draw long note length indicators
 		for (const auto& target : workingChart->Targets)
 		{
-			const auto buttonTime = TickToTime(target.Tick);
-			const f32 screenX = glm::round(GetTimelinePosition(buttonTime) - GetScrollX());
-			const auto visiblity = GetTimelineVisibility(screenX);
-
-			if (visiblity == TimelineVisibility::Left)
+			if (!target.IsLongStart())
 				continue;
-			if (visiblity == TimelineVisibility::Right)
-				break;
 
-			const size_t buttonIndex = static_cast<size_t>(target.Type);
-			const vec2 center = vec2(screenX + regions.Content.GetTL().x, targetYPositions[buttonIndex]);
-			const f32 scale = GetTimelineTargetScaleFactor(target, buttonTime) * iconScale;
+			if (target.NextID == TimelineTargetID::Null)
+				continue;
 
-			const bool tooEarly = (target.Tick < BeatTick::FromBars(1));
-			const bool isSelected = target.IsSelected;
+			i32 nextIndex = workingChart->Targets.FindIndex(target.NextID);
+			if (nextIndex == -1)
+				continue;
 
-			constexpr f32 tooEarlyOpacity = 0.5f, selectionOpacity = 0.75f;
-			const f32 edgeFadeOpacity = GetButtonEdgeFadeOpacity(screenX);
-			const f32 finalOpacity = tooEarly ? tooEarlyOpacity : isSelected ? (edgeFadeOpacity * selectionOpacity) : edgeFadeOpacity;
+			const auto& nextTarget = workingChart->Targets[nextIndex];
 
-			renderHelper.DrawButtonIcon(windowDrawList, target, center, scale, finalOpacity);
+			vec2 startCenter, endCenter;
+			f32 startScale, endScale;
+			f32 startOpacity, endOpacity;
+			bool startVisible = CalculateTargetDrawParam(target, &startCenter, &startScale, &startOpacity);
+			bool endVisible = CalculateTargetDrawParam(nextTarget, &endCenter, &endScale, &endOpacity);
+			if (!startVisible && !endVisible)
+				continue;
+
+			//windowDrawList->AddLine(startCenter, endCenter, IM_COL32_WHITE, 4.0f);
+			renderHelper.DrawTargetLine(windowDrawList, target.Type, startCenter, endCenter, startScale * endScale, startOpacity * endOpacity);
+		}
+
+		for (const auto& target : workingChart->Targets)
+		{
+			vec2 center;
+			f32 scale, opacity;
+			if (!CalculateTargetDrawParam(target, &center, &scale, &opacity))
+				continue;
+
+			renderHelper.DrawButtonIcon(windowDrawList, target, center, scale, opacity);
 			if (target.IsSelected)
 				tempSelectedTargetPositionBuffer.push_back(center);
 		}
@@ -1163,6 +1199,33 @@ namespace Comfy::Studio::Editor
 				windowDrawList->AddRect(tl, br, GetColor(EditorColor_TimelineSelectionBorder));
 			}
 			tempSelectedTargetPositionBuffer.clear();
+		}
+	}
+
+	void TargetTimeline::DrawTimelineRangedPlacement()
+	{
+		if (isPlacingRangedNote)
+		{
+			TimelineTarget tempStart = { };
+			tempStart.Tick = placingButtonStartTick;
+			tempStart.Type = placingButtonType;
+			tempStart.Flags.IsLong = true;
+
+			TimelineTarget tempEnd = { };
+			tempEnd.Tick = GetTargetPlacementCursorTickWithAdjustedOffsetSetting();
+			tempEnd.Type = placingButtonType;
+			tempEnd.Flags.IsLong = true;
+
+			vec2 startPos, endPos;
+			f32 startScale, endScale;
+			f32 startOpacity, endOpacity;
+			CalculateTargetDrawParam(tempStart, &startPos, &startScale, &startOpacity);
+			CalculateTargetDrawParam(tempEnd, &endPos, &endScale, &endOpacity);
+
+			auto* windowDrawList = Gui::GetWindowDrawList();
+			windowDrawList->AddLine(startPos, endPos, IM_COL32_WHITE, 4.0f);
+			renderHelper.DrawButtonIcon(windowDrawList, tempStart, startPos, startScale, startOpacity);
+			renderHelper.DrawButtonIcon(windowDrawList, tempEnd, endPos, endScale, endOpacity);
 		}
 	}
 
@@ -1284,6 +1347,7 @@ namespace Comfy::Studio::Editor
 	void TargetTimeline::OnDrawTimelineContents()
 	{
 		DrawRangeSelection();
+		DrawTimelineRangedPlacement();
 		DrawTimelineTargets();
 		DrawBoxSelection();
 	}
@@ -1743,6 +1807,9 @@ namespace Comfy::Studio::Editor
 		if (Gui::GetIO().KeyCtrl)
 			return;
 
+		if (UpdateInputRangedPlacement())
+			return;
+
 		auto onButtonTypePressed = [&](ButtonType buttonType)
 		{
 			if (Gui::GetIO().KeyShift && rangeSelection.IsActive && rangeSelection.HasEnd)
@@ -1770,6 +1837,68 @@ namespace Comfy::Studio::Editor
 
 		if (Input::IsAnyPressed(GlobalUserData.Input.TargetTimeline_DeleteSelection, false))
 			RemoveAllSelectedTargets(undoManager, *workingChart);
+	}
+
+	bool TargetTimeline::UpdateInputRangedPlacement()
+	{
+		const Comfy::Input::MultiBinding* keys[EnumCount<ButtonType>()] = {
+			&GlobalUserData.Input.TargetTimeline_PlaceTriangle,
+			&GlobalUserData.Input.TargetTimeline_PlaceSquare,
+			&GlobalUserData.Input.TargetTimeline_PlaceCross,
+			&GlobalUserData.Input.TargetTimeline_PlaceCircle,
+			nullptr,
+			nullptr,
+			nullptr
+		};
+
+		if (!isPlacingRangedNote && Gui::GetIO().KeyShift)
+		{
+			for (size_t i = 0; i < EnumCount<ButtonType>(); i++)
+			{
+				if (keys[i] == nullptr)
+					continue;
+
+				if (Input::IsAnyPressed(*keys[i], false, Input::ModifierBehavior_Relaxed))
+				{
+					isPlacingRangedNote = true;
+					placingButtonType = static_cast<ButtonType>(i);
+					placingButtonStartTick = GetTargetPlacementCursorTickWithAdjustedOffsetSetting();
+					PlayTargetButtonTypeSound(placingButtonType);
+					return true;
+				}
+			}
+		}
+		else if (isPlacingRangedNote)
+		{
+			if (Input::IsAnyPressed(*keys[static_cast<size_t>(placingButtonType)], false, Input::ModifierBehavior_Relaxed))
+			{
+				BeatTick curTick = GetTargetPlacementCursorTickWithAdjustedOffsetSetting();
+				TimelineTarget* start = PlaceOrRemoveTarget(undoManager, *workingChart, placingButtonStartTick, placingButtonType);
+				TimelineTarget* end = PlaceOrRemoveTarget(undoManager, *workingChart, curTick, placingButtonType);
+
+				if (start != nullptr && end != nullptr)
+				{
+					start->NextID = end->ID;
+					start->Flags.IsLong = true;
+					end->PreviousID = start->ID;
+					end->Flags.IsLong = true;
+				}
+
+				PlayTargetButtonTypeSound(placingButtonType);
+				isPlacingRangedNote = false;
+				placingButtonType = ButtonType::Count;
+				placingButtonStartTick = BeatTick::Zero();
+			}
+			else if (Input::IsKeyPressed(Comfy::Input::KeyCode_Escape, false))
+			{
+				isPlacingRangedNote = false;
+				placingButtonType = ButtonType::Count;
+			}
+
+			return true;
+		}
+
+		return false;
 	}
 
 	void TargetTimeline::UpdateInputContextMenu()
@@ -2292,10 +2421,11 @@ namespace Comfy::Studio::Editor
 		}
 	}
 
-	void TargetTimeline::PlaceOrRemoveTarget(Undo::UndoManager& undoManager, Chart& chart, BeatTick tick, ButtonType type)
+	TimelineTarget* TargetTimeline::PlaceOrRemoveTarget(Undo::UndoManager& undoManager, Chart& chart, BeatTick tick, ButtonType type)
 	{
 		const auto existingTargetIndex = chart.Targets.FindIndex(tick, type);
 		const auto* existingTarget = IndexOrNull(existingTargetIndex, chart.Targets);
+		TimelineTarget* placed_target = nullptr;
 
 		// NOTE: Double hit sound if a target gets placed in front of the cursor position.
 		//		 Keeping it this way could make it easier to notice when real time targets are not placed accurately to the beat (?)
@@ -2334,11 +2464,14 @@ namespace Comfy::Studio::Editor
 				PlayTargetButtonTypeSound(type);
 
 			undoManager.Execute<AddTarget>(chart, TimelineTarget(tick, type));
+			placed_target = IndexOrNull(chart.Targets.FindIndex(tick, type), chart.Targets);
 		}
 
 		const size_t buttonIndex = static_cast<size_t>(type);
 		buttonAnimations[buttonIndex].Tick = tick;
 		buttonAnimations[buttonIndex].ElapsedTime = TimeSpan::Zero();
+
+		return placed_target;
 	}
 
 	void TargetTimeline::RemoveAllSelectedTargets(Undo::UndoManager& undoManager, Chart& chart, std::optional<size_t> preCalculatedSelectionCount)

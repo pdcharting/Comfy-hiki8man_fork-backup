@@ -43,8 +43,16 @@ namespace Comfy::Studio::Editor
 		sprites.ButtonIconsDouble[static_cast<size_t>(ButtonType::Square)] = findSprite("TIMELINE_SQUARE_W");
 		sprites.ButtonIconsDouble[static_cast<size_t>(ButtonType::Star)] = findSprite("TIMELINE_STAR_W");
 
+		sprites.ButtonIconsLong[static_cast<size_t>(ButtonType::Triangle)] = findSprite("TIMELINE_TRIANGLE_LONG");
+		sprites.ButtonIconsLong[static_cast<size_t>(ButtonType::Circle)] = findSprite("TIMELINE_CIRCLE_LONG");
+		sprites.ButtonIconsLong[static_cast<size_t>(ButtonType::Cross)] = findSprite("TIMELINE_CROSS_LONG");
+		sprites.ButtonIconsLong[static_cast<size_t>(ButtonType::Square)] = findSprite("TIMELINE_SQUARE_LONG");
+		sprites.ButtonIconsLong[static_cast<size_t>(ButtonType::Star)] = nullptr;
+
 		sprites.HoldText = findSprite("TIMELINE_HOLD_TEXT");
 		sprites.HoldTextSync = findSprite("TIMELINE_HOLD_TEXT_SYNC");
+		sprites.TargetLine = findSprite("TARGET_LINE");
+		sprites.TargetLineYellow = findSprite("TARGET_LINE_YELLOW");
 	}
 
 	void TimelineRenderHelper::DrawButtonIcon(ImDrawList* drawList, const TimelineTarget& target, vec2 position, f32 scale, f32 transparency) const
@@ -80,6 +88,11 @@ namespace Comfy::Studio::Editor
 			drawList->AddText(Gui::GetFont(), 12.0f, position + vec2(-12.0f, 0.0f), color, "DOUBLE");
 #endif
 
+#if COMFY_DEBUG && 0 // DEBUG: LONG FLAG TEST
+		if (target.Flags.IsLong)
+			drawList->AddText(Gui::GetFont(), 12.0f, position + vec2(0.0f, 6.0f), color, "LONG");
+#endif
+
 #if COMFY_DEBUG && 0 // DEBUG: CHAIN FLAG TEST
 		if (target.Flags.IsChainStart)
 			drawList->AddCircle(position, 14.0f, 0xFFFFFF00);
@@ -94,18 +107,69 @@ namespace Comfy::Studio::Editor
 #endif
 	}
 
+	void TimelineRenderHelper::DrawTargetLine(ImDrawList* drawList, ButtonType type, vec2 startPos, vec2 endPos, f32 scale, f32 opacity) const
+	{
+		if (sprites.TargetLine == nullptr || sprites.TargetLineYellow == nullptr)
+			return;
+
+		const float width  = endPos.x - startPos.x;
+		const float height = 14.0f;
+
+		const auto* spr = type == ButtonType::Star ? sprites.TargetLineYellow : sprites.TargetLine;
+		const auto& tex = editorSprites->TexSet.Textures[spr->TextureIndex];
+
+		const vec2 uv0 = vec2(spr->TexelRegion.x, 1.0f - spr->TexelRegion.w);
+		const vec2 uv1 = vec2(spr->TexelRegion.x, 1.0f - spr->TexelRegion.y);
+		const vec2 uv2 = vec2(spr->TexelRegion.z, 1.0f - spr->TexelRegion.y);
+		const vec2 uv3 = vec2(spr->TexelRegion.z, 1.0f - spr->TexelRegion.w);
+
+		ImU32 color = 0xFFFFFFFF;
+		switch (type)
+		{
+		case ButtonType::Triangle:
+			color = IM_COL32(0, 230, 128, static_cast<i32>(opacity * 255));
+			break;
+		case ButtonType::Square:
+			color = IM_COL32(240, 147, 226, static_cast<i32>(opacity * 255));
+			break;
+		case ButtonType::Cross:
+			color = IM_COL32(63, 152, 255, static_cast<i32>(opacity * 255));
+			break;
+		case ButtonType::Circle:
+			color = IM_COL32(255, 84, 92, static_cast<i32>(opacity * 255));
+		}
+
+		// NOTE: This is probably *veeeeery* unefficient because of the many draw calls
+		//       for a single line, but using repeat UVs would require editing the sprite
+		//       and textures are a lot more stuff for it to properly repeat and like... eh.
+		//       I guess this is good enough.
+		float drawnWidth = 0.0f;
+		while (drawnWidth < width)
+		{
+			const vec2 topLeft = vec2(startPos.x + drawnWidth, startPos.y - height / 2.0f);
+			const vec2 topRight = vec2(startPos.x + drawnWidth + 2.0f, endPos.y - height / 2.0f);
+			const vec2 bottomLeft = vec2(startPos.x + drawnWidth, startPos.y + height / 2.0f);
+			const vec2 bottomRight = vec2(startPos.x + drawnWidth + 2.0f, endPos.y + height / 2.0f);
+
+			drawList->AddImageQuad(*tex, bottomLeft, topLeft, topRight, bottomRight, uv0, uv1, uv2, uv3, color);
+			drawnWidth += 2.0f;
+		}
+	}
+
 	const Graphics::Spr* TimelineRenderHelper::GetButtonSpriteForTarget(const TimelineTarget& target) const
 	{
 		const auto typeIndex = static_cast<u8>(target.Type);
 		const bool isSync = target.Flags.IsSync;
 		bool isFrag = (target.Flags.IsChain && !target.Flags.IsChainStart);
 		bool isDouble = target.Flags.IsDouble;
+		bool isLong = target.Flags.IsLong;
 
 		// NOTE: This does not match the correct behavior as used in the render window but should avoid confusion between single fragment chains and normal slides
 		if (target.Flags.IsChainStart && target.Flags.IsChainEnd)
 			isFrag = true;
 
 		const auto& typesArray =
+			isLong ? sprites.ButtonIconsLong :
 			isDouble ? sprites.ButtonIconsDouble :
 			isFrag ? isSync ? sprites.ButtonIconsFragSync : sprites.ButtonIconsFrag :
 			isSync ? sprites.ButtonIconsSync : sprites.ButtonIcons;

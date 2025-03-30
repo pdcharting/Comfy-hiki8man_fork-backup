@@ -391,22 +391,40 @@ namespace Comfy::Studio::Editor
 			}
 		}
 
+		inline void SetTargetPropertyData(const Data& data, TimelineTarget& target) const
+		{
+			if (!data.HadProperties)
+			{
+				target.Properties = Rules::Detail::PresetTargetProperties(target);
+				target.Flags.HasProperties = true;
+			}
+
+			for (TargetPropertyType p = 0; p < TargetPropertyType_Count; p++)
+			{
+				if (propertyFlags & (1 << p))
+					target.Properties[p] = data.NewValue[p];
+			}
+		}
+
 		void Redo() override
 		{
 			for (const auto& data : targetData)
 			{
 				auto& target = chart.Targets[chart.Targets.FindIndex(data.ID)];
+				SetTargetPropertyData(data, target);
 
-				if (!data.HadProperties)
+				if (target.IsLongStart())
 				{
-					target.Properties = Rules::Detail::PresetTargetProperties(target);
-					target.Flags.HasProperties = true;
-				}
-
-				for (TargetPropertyType p = 0; p < TargetPropertyType_Count; p++)
-				{
-					if (propertyFlags & (1 << p))
-						target.Properties[p] = data.NewValue[p];
+					TimelineTargetID nextID = target.IsLongStart() ? target.NextID : target.PreviousID;
+					if (nextID != TimelineTargetID::Null)
+					{
+						i32 nextIndex = chart.Targets.FindIndex(nextID);
+						if (nextIndex != -1)
+						{
+							auto& nextTarget = chart.Targets[nextIndex];
+							SetTargetPropertyData(data, nextTarget);
+						}
+					}
 				}
 			}
 		}

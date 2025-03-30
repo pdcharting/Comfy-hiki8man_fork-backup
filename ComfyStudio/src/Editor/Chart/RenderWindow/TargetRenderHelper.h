@@ -159,15 +159,19 @@ namespace Comfy::Studio::Editor
 		{
 			ButtonType Type;
 			bool Chance;
+			bool Long;
 			TargetProperties Properties;
 			f32 Progress;
 			f32 ProgressStart;
 			f32 ProgressEnd;
 			f32 ProgressMax;
 			f32 Opacity;
+			f32 Length;
+			f32 FlyingTime;
 		};
 
 		void DrawButtonTrail(Render::Renderer2D& renderer, const ButtonTrailData& data) const;
+		void DrawLongButtonTrail(Render::Renderer2D& renderer, const ButtonTrailData& data) const;
 
 		struct ButtonSyncLineData
 		{

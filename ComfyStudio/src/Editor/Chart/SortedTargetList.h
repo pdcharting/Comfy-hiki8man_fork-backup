@@ -172,9 +172,18 @@ namespace Comfy::Studio::Editor
 		TargetFlags Flags = {};
 		TargetProperties Properties = {};
 		TimelineTargetID ID = {};
+		// NOTE: ID of the associated long end note or the next link note piece.
+		TimelineTargetID NextID = {};
+		// NOTE: ID of the associated long start note or the previous link note piece.
+		TimelineTargetID PreviousID = {};
+		// NOTE: ID of this target, used to resolve references when re-importing a chart file.
+		TimelineTargetID ReferenceID = {};
+
+		bool IsLongStart() const;
+		bool IsLongEnd() const;
 	};
 
-	static_assert(sizeof(TimelineTarget) == 40);
+	static_assert(sizeof(TimelineTarget) == 52);
 
 	class SortedTargetList : NonCopyable
 	{
@@ -195,6 +204,8 @@ namespace Comfy::Studio::Editor
 		i32 FindIndex(BeatTick tick) const;
 		i32 FindIndex(BeatTick tick, ButtonType type) const;
 		i32 FindIndex(TimelineTargetID id) const;
+
+		Comfy::Studio::Editor::BeatTick GetLengthInTicks(const TimelineTarget& target);
 
 		void Clear();
 
@@ -226,6 +237,8 @@ namespace Comfy::Studio::Editor
 
 		void UpdateTargetInternalFlagsAround(i32 index);
 		void UpdateTargetInternalFlagsInRange(i32 startIndex = -1, i32 endIndex = -1);
+		TimelineTargetID FindNewTargetID(TimelineTargetID referenceID);
+		void ResolveNewTargetReferenceIDs();
 
 		i32 FloorIndexToSyncPairStart(i32 index) const;
 		i32 CeilIndexToSyncPairEnd(i32 index) const;

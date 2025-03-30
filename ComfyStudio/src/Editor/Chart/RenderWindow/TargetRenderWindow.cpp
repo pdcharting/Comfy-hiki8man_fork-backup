@@ -575,8 +575,14 @@ namespace Comfy::Studio::Editor
 			//		 This happens when a target is placed within the (first_bar / flying_time_factor)
 			targetTime = Max(TimeSpan::Zero(), targetTime);
 
-			const auto endTick = buttonTick + GlobalUserData.TargetPreview.PostHitLingerDuration;
+			auto endTick = buttonTick + GlobalUserData.TargetPreview.PostHitLingerDuration;
 			const auto endTime = workingChart->TempoMap.TickToTime(endTick);
+
+			if (target.IsLongStart())
+			{
+				endTick += workingChart->Targets.GetLengthInTicks(target);
+				endTick -= GlobalUserData.TargetPreview.PostHitLingerDuration;
+			}
 
 			if (target.IsSelected || (cursorTick >= targetTick && cursorTick <= endTick))
 			{
@@ -588,7 +594,8 @@ namespace Comfy::Studio::Editor
 				if (target.Flags.IsChain && !target.Flags.IsChainStart)
 					properties.Position.x += Rules::ChainFragmentStartEndOffsetDistance * (target.Type == ButtonType::SlideL ? -1.0f : +1.0f);
 
-				const bool inCursorBarRange = (cursorTick >= targetTick && cursorTick <= buttonTick);
+				const bool inCursorBarRange = (cursorTick >= targetTick && cursorTick <= buttonTick) || target.IsLongStart();
+				const bool dispButton = (cursorTick >= targetTick && cursorTick <= buttonTick);
 
 				auto& targetData = renderHelperEx.EmplaceTarget();
 				targetData.Type = target.Type;
@@ -610,23 +617,39 @@ namespace Comfy::Studio::Editor
 
 				if (inCursorBarRange)
 				{
-					auto& buttonData = renderHelperEx.EmplaceButton();
-					buttonData.Type = targetData.Type;
-					buttonData.Sync = targetData.Sync;
-					buttonData.Chain = targetData.Chain;
-					buttonData.ChainStart = targetData.ChainStart;
-					buttonData.Chance = targetData.Chance;
-					buttonData.Double = targetData.Double;
-					buttonData.Long = targetData.Long;
-					buttonData.Shadow = TargetRenderHelper::ButtonShadowType::Black;
-					buttonData.Position = GetButtonPathSinePoint(progress, properties);
-					buttonData.Progress = progress;
-					buttonData.Scale = 1.0f;
-
-					if (!buttonData.Sync)
+					if (dispButton)
 					{
-						const auto flyDuration = (buttonTime - targetTime);
-						renderHelperEx.ConstructButtonTrail(renderHelperEx.EmplaceButtonTrail(), target.Type, progress, progressUnbound, properties, flyDuration);
+						auto& buttonData = renderHelperEx.EmplaceButton();
+						buttonData.Type = targetData.Type;
+						buttonData.Sync = targetData.Sync;
+						buttonData.Chain = targetData.Chain;
+						buttonData.ChainStart = targetData.ChainStart;
+						buttonData.Chance = targetData.Chance;
+						buttonData.Double = targetData.Double;
+						buttonData.Long = targetData.Long;
+						buttonData.Shadow = TargetRenderHelper::ButtonShadowType::Black;
+						buttonData.Position = GetButtonPathSinePoint(progress, properties);
+						buttonData.Progress = progress;
+						buttonData.Scale = 1.0f;
+
+						if (!buttonData.Sync && !target.Flags.IsLong)
+						{
+							const auto flyDuration = (buttonTime - targetTime);
+							renderHelperEx.ConstructButtonTrail(renderHelperEx.EmplaceButtonTrail(), target.Type, progress, progressUnbound, properties, flyDuration);
+						}
+					}
+
+					if (target.IsLongStart())
+					{
+						f32 lengthFractions = workingChart->Targets.GetLengthInTicks(target).BeatsFraction();
+						f32 flyingTime = (buttonTime - targetTime).TotalSeconds();
+						f32 length = lengthFractions / 4.0f * flyingTime;
+
+						auto& trailData = renderHelperEx.EmplaceButtonTrail();
+						renderHelperEx.ConstructButtonTrail(trailData, target.Type, progress, progressUnbound, properties, buttonTime - targetTime, target.Flags.IsChance);
+						trailData.Long = true;
+						trailData.Length = length;
+						trailData.FlyingTime = flyingTime;
 					}
 
 					if (target.Flags.IsSync && target.Flags.IndexWithinSyncPair == 0)

@@ -1,3 +1,4 @@
+#include <glm/gtx/rotate_vector.hpp> // for glm::rotate on vec2
 #include "TargetRenderHelper.h"
 #include "Editor/Chart/ChartEditor.h"
 #include "Editor/Chart/TargetPropertyRules.h"
@@ -333,6 +334,11 @@ namespace Comfy::Studio::Editor
 				registerTypeLayer(ButtonType::Square,   "target_left_w",  layers.TargetsDouble);
 				registerTypeLayer(ButtonType::Star,     "target_touch_w", layers.TargetsDouble);
 
+				registerTypeLayer(ButtonType::Triangle, "target_sankaku_long", layers.TargetsLong);
+				registerTypeLayer(ButtonType::Circle,   "target_maru_long",    layers.TargetsLong);
+				registerTypeLayer(ButtonType::Cross,    "target_batsu_long",   layers.TargetsLong);
+				registerTypeLayer(ButtonType::Square,   "target_shikaku_long", layers.TargetsLong);
+
 				registerTypeLayer(ButtonType::Triangle, "button_sankaku", layers.Buttons);
 				registerTypeLayer(ButtonType::Square, "button_shikaku", layers.Buttons);
 				registerTypeLayer(ButtonType::Cross, "button_batsu", layers.Buttons);
@@ -385,6 +391,11 @@ namespace Comfy::Studio::Editor
 				registerTypeLayer(ButtonType::Square,   "button_left_w",  layers.ButtonsDouble);
 				registerTypeLayer(ButtonType::Star,     "button_touch_w", layers.ButtonsDouble);
 
+				registerTypeLayer(ButtonType::Triangle, "button_sankaku_long", layers.ButtonsLong);
+				registerTypeLayer(ButtonType::Circle,   "button_maru_long",    layers.ButtonsLong);
+				registerTypeLayer(ButtonType::Cross,    "button_batsu_long",   layers.ButtonsLong);
+				registerTypeLayer(ButtonType::Square,   "button_shikaku_long", layers.ButtonsLong);
+
 				videos.TargetHand = findVideo(*aetGameCommon, "GAM_CMN_TARGET_HAND");
 			}
 
@@ -392,6 +403,7 @@ namespace Comfy::Studio::Editor
 			{
 				renderer.UploadToGPUFreeCPUMemory(*sprGameCommon);
 				sprites.ButtonTrail = findSprite(*sprGameCommon, "KISEKI");
+				sprites.ButtonLongTrail = findSprite(*sprGameCommon, "KISEKI_LONG_ALL");
 				sprites.ButtonSyncLine = findSprite(*sprGameCommon, "KISEKI_SYNC");
 
 				sprites.ComboNumbers[0] = findSprite(*sprGameCommon, "CMB_NUM_00");
@@ -1035,6 +1047,9 @@ namespace Comfy::Studio::Editor
 				if (data.Double)
 					return layers.TargetsDouble;
 
+				if (data.Long)
+					return layers.TargetsLong;
+
 				if (data.ChainHit)
 					return !data.ChainStart ? layers.TargetsFragHit : layers.TargetsHit;
 
@@ -1085,6 +1100,9 @@ namespace Comfy::Studio::Editor
 			{
 				if (data.Double)
 					return layers.ButtonsDouble;
+
+				if (data.Long)
+					return layers.ButtonsLong;
 
 				if (data.Chance)
 					return layers.ButtonsChance;
@@ -1219,6 +1237,91 @@ namespace Comfy::Studio::Editor
 				Render::TexSamplerView(trail.Tex, TextureAddressMode::WrapRepeat, TextureAddressMode::ClampBorder, TextureFilter::Linear),
 				AetBlendMode::Normal,
 				PrimitiveType::TriangleStrip);
+		}
+
+		void DrawHackyTrailConnectionFix(Render::Renderer2D& renderer) const
+		{
+			// HACK: I'm not sure if this is an issue of Renderer2D, but for some reason
+			//       the trail mesh's vertices keeps getting connected to the previous and next note's one.
+			//       So this hack, by drawing a triangle (not TriangleStrip), "fixes" that.
+			Comfy::Render::PositionTextureColorVertex verticesHack[3] = {};
+			renderer.DrawVertices(verticesHack, 3);
+		}
+
+		vec2 CalculateTargetNormal(const ButtonTrailData& data) const
+		{
+			vec2 startPos = GetButtonPathSinePoint(0.0f, data.Properties);
+			vec2 deltaPos = data.Properties.Position - startPos;
+			float length = sqrtf(deltaPos.x * deltaPos.x + deltaPos.y * deltaPos.y);
+			if (length != 0.0f)
+			{
+				vec2 normal = glm::rotate(deltaPos / length, glm::radians(90.0f));
+				return normal;
+			}
+
+			return deltaPos;
+		}
+
+		void DrawLongButtonTrail(Render::Renderer2D& renderer, const ButtonTrailData& data) const
+		{
+			if (data.Opacity <= 0.0f || data.Length <= 0.0f)
+				return;
+
+			Comfy::Render::TexSprView sprite = GetButtonLongTrailSprite();
+			if (!sprite)
+				return;
+
+			constexpr size_t vertexPerSegment = 2;
+			constexpr size_t segmentCount = 80;
+			constexpr float pixelWidth = 56.0f;
+			const float timeSinceSpawn = data.Progress;
+			const float timeSinceHit = data.Progress >= data.FlyingTime ? data.Progress - data.FlyingTime : -1.0f;
+			const float baseFlyingTime = data.ProgressStart * data.FlyingTime;
+			const vec2 targetNormal = CalculateTargetNormal(data);
+			
+			float length = data.Length;
+			if (timeSinceHit > -1.0f)
+				length = fmaxf(data.Length - timeSinceHit, 0.0f);
+
+			const float leftV = (static_cast<i32>(data.Type) * 64.0f) / 512.0f;
+			const float rightV = (static_cast<i32>(data.Type) * 64.0f + 64.0f) / 512.0f;
+
+			std::array<vec2, segmentCount> segmentPositions = { };
+			for (size_t i = 0; i < segmentCount; i++)
+			{
+				const float secPerSegment  = length / segmentCount;
+				const float segmentOffset  = secPerSegment * i;
+				const float offsetProgress = (baseFlyingTime - segmentOffset) / data.FlyingTime;
+				segmentPositions[i] = GetButtonPathSinePoint(offsetProgress, data.Properties);
+			}			
+
+			constexpr size_t vertexCount = segmentCount * vertexPerSegment;
+			std::array<Comfy::Render::PositionTextureColorVertex, vertexCount> vertices = { };
+
+			for (size_t i = 0; i < segmentCount; i++)
+			{
+				const size_t vertexIndex = i * vertexPerSegment;
+
+				vec2 offsetRight = targetNormal * vec2(pixelWidth / 2.0f, pixelWidth / 2.0f);
+				vec2 offsetLeft = -offsetRight;
+
+				vertices[vertexIndex].Position = segmentPositions[i] + offsetLeft;
+				vertices[vertexIndex].Color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+				vertices[vertexIndex].TextureCoordinates = vec2(i / static_cast<float>(segmentCount), leftV);
+				vertices[vertexIndex + 1].Position = segmentPositions[i] + offsetRight;
+				vertices[vertexIndex + 1].Color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+				vertices[vertexIndex + 1].TextureCoordinates = vec2(i / static_cast<float>(segmentCount), rightV);
+			}
+
+			DrawHackyTrailConnectionFix(renderer);
+			renderer.DrawVertices(
+				vertices.data(),
+				vertices.size(),
+				Render::TexSamplerView(sprite.Tex, TextureAddressMode::WrapRepeat, TextureAddressMode::ClampBorder, TextureFilter::Linear),
+				AetBlendMode::Normal,
+				PrimitiveType::TriangleStrip
+			);
+			DrawHackyTrailConnectionFix(renderer);
 		}
 
 		void DrawButtonPairSyncLines(Render::Renderer2D& renderer, const ButtonSyncLineData& data) const
@@ -1412,6 +1515,13 @@ namespace Comfy::Studio::Editor
 				Render::TexSprView { sprGameCommon->TexSet.Textures[sprites.ButtonTrail->TextureIndex].get(), sprites.ButtonTrail };
 		}
 
+		Render::TexSprView GetButtonLongTrailSprite() const
+		{
+			return (sprites.ButtonLongTrail == nullptr) ?
+				Render::TexSprView { nullptr, nullptr } :
+				Render::TexSprView { sprGameCommon->TexSet.Textures[sprites.ButtonLongTrail->TextureIndex].get(), sprites.ButtonLongTrail };
+		}
+
 		Render::TexSprView GetButtonSyncLineSprite() const
 		{
 			return (sprites.ButtonSyncLine == nullptr) ?
@@ -1524,6 +1634,7 @@ namespace Comfy::Studio::Editor
 				TargetsChanceSync,
 				TargetsChanceSyncHold,
 				TargetsDouble,
+				TargetsLong,
 				Buttons,
 				ButtonsFrag,
 				ButtonsSync,
@@ -1533,7 +1644,8 @@ namespace Comfy::Studio::Editor
 				ButtonShadowsBlackFrag,
 				ButtonShadowsWhite,
 				ButtonShadowsWhiteFrag,
-				ButtonsDouble;
+				ButtonsDouble,
+				ButtonsLong;
 
 			std::shared_ptr<Aet::Layer>
 				PracticeLevelInfoEasy,
@@ -1594,6 +1706,7 @@ namespace Comfy::Studio::Editor
 			Spr* PracticeNumbers;
 
 			Spr* ButtonTrail;
+			Spr* ButtonLongTrail;
 			Spr* ButtonSyncLine;
 
 			std::array<Spr*, 10>
@@ -1693,7 +1806,15 @@ namespace Comfy::Studio::Editor
 
 	void TargetRenderHelper::DrawButtonTrail(Render::Renderer2D& renderer, const ButtonTrailData& data) const
 	{
-		impl->DrawButtonTrail(renderer, data);
+		if (data.Long)
+			DrawLongButtonTrail(renderer, data);
+		else
+			impl->DrawButtonTrail(renderer, data);
+	}
+
+	void TargetRenderHelper::DrawLongButtonTrail(Render::Renderer2D& renderer, const ButtonTrailData& data) const
+	{
+		impl->DrawLongButtonTrail(renderer, data);
 	}
 
 	void TargetRenderHelper::DrawButtonPairSyncLines(Render::Renderer2D& renderer, const ButtonSyncLineData& data) const

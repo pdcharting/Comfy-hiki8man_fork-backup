@@ -100,7 +100,7 @@ namespace Comfy::Studio::Editor
 			void(*WriteFunc)(IO::StreamWriter&, const TimelineTarget&);
 		};
 
-		constexpr std::array<TargetField, 13> TargetFields =
+		constexpr std::array<TargetField, 16> TargetFields =
 		{
 			TargetField { "Tick", sizeof(i32), [](IO::StreamReader& r, TimelineTarget& t) { t.Tick = BeatTick(r.ReadI32()); }, [](IO::StreamWriter& writer, const TimelineTarget& target) { writer.WriteI32(target.Tick.Ticks()); } },
 			TargetField { "Type", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Type = static_cast<ButtonType>(r.ReadU8()); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(static_cast<u8>(t.Type)); } },
@@ -115,6 +115,9 @@ namespace Comfy::Studio::Editor
 			TargetField { "Frequency", sizeof(f32), [](IO::StreamReader& r, TimelineTarget& t) { t.Properties.Frequency = r.ReadF32(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteF32(t.Properties.Frequency); } },
 			TargetField { "Amplitude", sizeof(f32), [](IO::StreamReader& r, TimelineTarget& t) { t.Properties.Amplitude = r.ReadF32(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteF32(t.Properties.Amplitude); } },
 			TargetField { "Distance", sizeof(f32), [](IO::StreamReader& r, TimelineTarget& t) { t.Properties.Distance = r.ReadF32(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteF32(t.Properties.Distance); } },
+			TargetField { "NextID", sizeof(i32), [](IO::StreamReader& r, TimelineTarget& t) { t.NextID = static_cast<TimelineTargetID>(r.ReadI32()); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteI32(static_cast<i32>(t.NextID)); } },
+			TargetField { "PreviousID", sizeof(i32), [](IO::StreamReader& r, TimelineTarget& t) { t.PreviousID = static_cast<TimelineTargetID>(r.ReadI32()); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteI32(static_cast<i32>(t.PreviousID)); } },
+			TargetField { "ReferenceID", sizeof(i32), [](IO::StreamReader& r, TimelineTarget& t) { t.ReferenceID = static_cast<TimelineTargetID>(r.ReadI32()); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteI32(static_cast<i32>(t.ID)); } }
 		};
 
 		struct TempoField
