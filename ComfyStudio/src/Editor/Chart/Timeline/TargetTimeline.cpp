@@ -1490,8 +1490,7 @@ namespace Comfy::Studio::Editor
 		if (Input::IsAnyPressed(GlobalUserData.Input.TargetTimeline_ToggleTargetHolds, false))
 			ToggleSelectedTargetsHolds(undoManager, *workingChart);
 
-		// TODO: Add keybind for these
-		if (Input::IsKeyPressed(Comfy::Input::KeyCode_B, false))
+		if (Input::IsAnyPressed(GlobalUserData.Input.TargetTimeline_ToggleTargetDoubles, false))
 			ToggleSelectedTargetsDoubles(undoManager, *workingChart);
 	}
 
@@ -1831,8 +1830,7 @@ namespace Comfy::Studio::Editor
 		if (Input::IsAnyPressed(GlobalUserData.Input.TargetTimeline_PlaceSlideR, false, Input::ModifierBehavior_Relaxed))
 			onButtonTypePressed(ButtonType::SlideR);
 
-		// TODO: Add keybind for this
-		if (Input::IsKeyPressed(Comfy::Input::KeyCode_L, false))
+		if (Input::IsAnyPressed(GlobalUserData.Input.TargetTimeline_PlaceStar, false, Input::ModifierBehavior_Relaxed))
 			onButtonTypePressed(ButtonType::Star);
 
 		if (Input::IsAnyPressed(GlobalUserData.Input.TargetTimeline_DeleteSelection, false))

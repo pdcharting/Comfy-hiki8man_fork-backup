@@ -24,6 +24,14 @@ namespace Comfy::Studio::Editor
 		sprites.ButtonIcons[static_cast<size_t>(ButtonType::SlideR)] = findSprite("TIMELINE_SLIDE_R");
 		sprites.ButtonIcons[static_cast<size_t>(ButtonType::Star)] = findSprite("TIMELINE_STAR");
 
+		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::Triangle)] = findSprite("TIMELINE_TRIANGLE");
+		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::Square)] = findSprite("TIMELINE_SQUARE");
+		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::Cross)] = findSprite("TIMELINE_CROSS");
+		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::Circle)] = findSprite("TIMELINE_CIRCLE");
+		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::SlideL)] = findSprite("TIMELINE_SLIDE_L");
+		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::SlideR)] = findSprite("TIMELINE_SLIDE_R");
+		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::Star)] = findSprite("TIMELINE_STAR_CH");
+
 		sprites.ButtonIconsSync[static_cast<size_t>(ButtonType::Triangle)] = findSprite("TIMELINE_TRIANGLE_SYNC");
 		sprites.ButtonIconsSync[static_cast<size_t>(ButtonType::Square)] = findSprite("TIMELINE_SQUARE_SYNC");
 		sprites.ButtonIconsSync[static_cast<size_t>(ButtonType::Cross)] = findSprite("TIMELINE_CROSS_SYNC");
@@ -163,6 +171,7 @@ namespace Comfy::Studio::Editor
 		bool isFrag = (target.Flags.IsChain && !target.Flags.IsChainStart);
 		bool isDouble = target.Flags.IsDouble;
 		bool isLong = target.Flags.IsLong;
+		bool isChance = target.Flags.IsChance;
 
 		// NOTE: This does not match the correct behavior as used in the render window but should avoid confusion between single fragment chains and normal slides
 		if (target.Flags.IsChainStart && target.Flags.IsChainEnd)
@@ -171,6 +180,7 @@ namespace Comfy::Studio::Editor
 		const auto& typesArray =
 			isLong ? sprites.ButtonIconsLong :
 			isDouble ? sprites.ButtonIconsDouble :
+			isChance ? sprites.ButtonIconsChance :
 			isFrag ? isSync ? sprites.ButtonIconsFragSync : sprites.ButtonIconsFrag :
 			isSync ? sprites.ButtonIconsSync : sprites.ButtonIcons;
 

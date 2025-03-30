@@ -28,6 +28,7 @@ namespace Comfy::Studio::Editor
 		{
 			std::array<const Graphics::Spr*, EnumCount<ButtonType>()>
 				ButtonIcons,
+				ButtonIconsChance,
 				ButtonIconsSync,
 				ButtonIconsFrag,
 				ButtonIconsFragSync,

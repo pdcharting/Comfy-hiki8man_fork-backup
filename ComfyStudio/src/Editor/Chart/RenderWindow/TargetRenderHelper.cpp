@@ -1181,6 +1181,7 @@ namespace Comfy::Studio::Editor
 				vec3(0.93f, 0.27f, 0.29f),
 				vec3(1.00f, 1.00f, 0.78f),
 				vec3(1.00f, 1.00f, 0.78f),
+				vec3(0.90f, 0.90f, 0.10f)
 			};
 
 			static constexpr vec3 chanceTrailColor = vec3(1.0f, 1.0f, 1.0f);
