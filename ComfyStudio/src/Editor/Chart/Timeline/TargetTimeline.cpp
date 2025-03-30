@@ -1223,7 +1223,7 @@ namespace Comfy::Studio::Editor
 			CalculateTargetDrawParam(tempEnd, &endPos, &endScale, &endOpacity);
 
 			auto* windowDrawList = Gui::GetWindowDrawList();
-			windowDrawList->AddLine(startPos, endPos, IM_COL32_WHITE, 4.0f);
+			renderHelper.DrawTargetLine(windowDrawList, placingButtonType, startPos, endPos, startScale * endScale, startOpacity * endOpacity);
 			renderHelper.DrawButtonIcon(windowDrawList, tempStart, startPos, startScale, startOpacity);
 			renderHelper.DrawButtonIcon(windowDrawList, tempEnd, endPos, endScale, endOpacity);
 		}

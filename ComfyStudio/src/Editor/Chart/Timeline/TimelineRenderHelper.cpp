@@ -113,7 +113,7 @@ namespace Comfy::Studio::Editor
 			return;
 
 		const float width  = endPos.x - startPos.x;
-		const float height = 14.0f;
+		const float height = 18.0f * scale;
 
 		const auto* spr = type == ButtonType::Star ? sprites.TargetLineYellow : sprites.TargetLine;
 		const auto& tex = editorSprites->TexSet.Textures[spr->TextureIndex];
