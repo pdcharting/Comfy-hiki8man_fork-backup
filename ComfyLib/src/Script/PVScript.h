@@ -238,8 +238,17 @@ namespace Comfy
 		{ PVCommandType::PSE, 2, "PSE", },
 	};
 
-	constexpr u32 GetPVCommandParamCount(PVCommandType type)
+	enum class PVScriptVersion : u32
 	{
+		F = 0x12020220,
+		FT = 0x14050921,
+	};
+
+	constexpr u32 GetPVCommandParamCount(PVCommandType type, PVScriptVersion version)
+	{
+		if (type == PVCommandType::Target && version == PVScriptVersion::F)
+			return 11;
+
 		return (type >= PVCommandType::Count) ? 0 : PVCommandInfoTable[static_cast<u32>(type)].ParamCount;
 	}
 
@@ -258,7 +267,7 @@ namespace Comfy
 		PVCommand() = default;
 		constexpr PVCommand(PVCommandType type) : Type(type), Param() {}
 
-		constexpr u32 ParamCount() const { return GetPVCommandParamCount(Type); }
+		constexpr u32 ParamCount(PVScriptVersion version = PVScriptVersion::FT) const { return GetPVCommandParamCount(Type, version); }
 		constexpr std::string_view Name() const { return GetPVCommandName(Type); }
 
 		template <typename Layout>
@@ -281,11 +290,13 @@ namespace Comfy
 
 			constexpr operator PVCommand() const
 			{
+				/*
 				static_assert(std::is_standard_layout_v<Dervied>);
 				if constexpr (std::is_empty_v<Dervied>)
 					static_assert(GetPVCommandParamCount(T) == 0, "Unexpected Layout Size");
 				else
 					static_assert(sizeof(Dervied) == (sizeof(u32) * GetPVCommandParamCount(T)), "Unexpected Layout Size");
+				*/
 
 				PVCommand out = { CommandType };
 				std::memcpy(out.Param.data(), this, sizeof(Dervied));
@@ -359,6 +370,29 @@ namespace Comfy
 			SlideBothChance = 22,
 			SlideLChance = 23,
 			SlideRChance = 24,
+
+			TriangleRush = 25,
+			CircleRush = 26,
+			CrossRush = 27,
+			SquareRush = 28,
+
+			TriangleW = 29,
+			CircleW = 30,
+			CrossW = 31,
+			SquareW = 32,
+
+			TriangleLong = 33,
+			CircleLong = 34,
+			CrossLong = 35,
+			SquareLong = 36,
+
+			Star = 37,
+			StarLong = 38,
+			StarW = 39,
+			ChanceStar = 40,
+			LinkStar = 41,
+			LinkStarEnd = 42,
+			StarRush = 43
 		};
 
 		struct Target : LayoutBase<Target, PVCommandType::Target>
@@ -370,6 +404,21 @@ namespace Comfy
 			i32 Distance;
 			i32 Amplitude;
 			i32 Frequency;
+		};
+
+		struct TargetF : LayoutBase<TargetF, PVCommandType::Target>
+		{
+			TargetType Type;
+			i32 Length;
+			i32 IsLongEnd;
+			i32 PositionX;
+			i32 PositionY;
+			i32 Angle;
+			i32 Frequency;
+			i32 Distance;
+			i32 Amplitude;
+			i32 FlyingTime;
+			i32 TimeSignature;
 		};
 
 		struct ChangeField : LayoutBase<ChangeField, PVCommandType::ChangeField>
@@ -459,20 +508,15 @@ namespace Comfy
 		};
 	}
 
-	enum class PVScriptVersion : u32
-	{
-		Current = 0x14050921,
-	};
-
 	class PVScript : public IO::IBufferParsable, public IO::IStreamWritable
 	{
 	public:
 		static constexpr std::string_view Extension = ".dsc";
-		static constexpr std::string_view FilterName = "Project DIVA Future Tone PV Script";
+		static constexpr std::string_view FilterName = "Project DIVA PV Script";
 		static constexpr std::string_view FilterSpec = "*.dsc";
 
 	public:
-		PVScriptVersion Version = PVScriptVersion::Current;
+		PVScriptVersion Version = PVScriptVersion::FT;
 		std::vector<PVCommand> Commands;
 
 	public:

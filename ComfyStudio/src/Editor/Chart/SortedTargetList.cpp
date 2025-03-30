@@ -249,7 +249,7 @@ namespace Comfy::Studio::Editor
 		return FindPrevious(target);
 	}
 
-	Comfy::Studio::Editor::BeatTick SortedTargetList::GetLengthInTicks(const TimelineTarget& target)
+	Comfy::Studio::Editor::BeatTick SortedTargetList::GetLengthInTicks(const TimelineTarget& target) const
 	{
 		if (target.IsLongStart() && static_cast<i32>(target.NextID) != 0)
 		{

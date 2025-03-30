@@ -852,10 +852,18 @@ namespace Comfy::Studio::Editor
 		fileDialog.Filters = { { std::string(PVScript::FilterName), std::string(PVScript::FilterSpec) }, };
 		fileDialog.ParentWindowHandle = ComfyStudioApplication::GetGlobalWindowFocusHandle();
 
+		bool exportAsF = false;
+
+		auto& item = fileDialog.CustomizeItems.emplace_back();
+		item.Type = IO::Shell::Custom::ItemType::Checkbox;
+		item.Label = "Export as F script";
+		item.Data.CheckboxChecked = &exportAsF;
+
 		if (!fileDialog.OpenSave())
 			return false;
 
-		pvScriptExportPopup.Window.ConvertAndSaveSimpleScriptSync(fileDialog.OutFilePath, *chart);
+		auto mode = exportAsF ? ScriptConversionMode::F : ScriptConversionMode::Normal;
+		pvScriptExportPopup.Window.ConvertAndSaveSimpleScriptSync(fileDialog.OutFilePath, *chart, mode);
 		return true;
 	}
 

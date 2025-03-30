@@ -208,7 +208,7 @@ namespace Comfy::Studio::Editor
 		TimelineTarget* FindPrevious(const TimelineTarget& target);
 		TimelineTarget* FindNextOrPrevious(const TimelineTarget& target);
 
-		Comfy::Studio::Editor::BeatTick GetLengthInTicks(const TimelineTarget& target);
+		Comfy::Studio::Editor::BeatTick GetLengthInTicks(const TimelineTarget& target) const;
 
 		void Clear();
 

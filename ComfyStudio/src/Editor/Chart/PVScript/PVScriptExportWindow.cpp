@@ -78,18 +78,66 @@ namespace Comfy::Studio::Editor
 			const bool isHold = target.Flags.IsHold;
 			const bool isChain = target.Flags.IsChain;
 			const bool isChance = target.Flags.IsChance;
+			const bool isDouble = target.Flags.IsDouble;
+			const bool isLong = target.Flags.IsLong;
 
 			switch (target.Type)
 			{
-			case ButtonType::Triangle: return isHold ? TargetType::TriangleHold : isChance ? TargetType::TriangleChance : TargetType::Triangle;
-			case ButtonType::Square: return isHold ? TargetType::SquareHold : isChance ? TargetType::SquareChance : TargetType::Square;
-			case ButtonType::Cross: return isHold ? TargetType::CrossHold : isChance ? TargetType::CrossChance : TargetType::Cross;
-			case ButtonType::Circle: return isHold ? TargetType::CircleHold : isChance ? TargetType::CircleChance : TargetType::Circle;
-			case ButtonType::SlideL: return isChain ? TargetType::SlideChainL : isChance ? TargetType::SlideLChance : TargetType::SlideL;
-			case ButtonType::SlideR: return isChain ? TargetType::SlideChainR : isChance ? TargetType::SlideRChance : TargetType::SlideR;
+			case ButtonType::Triangle:
+				return isDouble ? TargetType::TriangleW :
+					isLong ? TargetType::TriangleLong :
+					isHold ? TargetType::TriangleHold :
+					isChance ? TargetType::TriangleChance : TargetType::Triangle;
+			case ButtonType::Square:
+				return isDouble ? TargetType::SquareW :
+					isLong ? TargetType::SquareLong : 
+					isHold ? TargetType::SquareHold :
+					isChance ? TargetType::SquareChance : TargetType::Square;
+			case ButtonType::Cross:
+				return isDouble ? TargetType::CrossW :
+					isLong ? TargetType::CrossLong : 
+					isHold ? TargetType::CrossHold :
+					isChance ? TargetType::CrossChance : TargetType::Cross;
+			case ButtonType::Circle:
+				return isDouble ? TargetType::CircleW :
+					isLong ? TargetType::CircleLong : 
+					isHold ? TargetType::CircleHold :
+					isChance ? TargetType::CircleChance : TargetType::Circle;
+			case ButtonType::SlideL:
+				return isChain ? TargetType::SlideChainL : isChance ? TargetType::SlideLChance : TargetType::SlideL;
+			case ButtonType::SlideR:
+				return isChain ? TargetType::SlideChainR : isChance ? TargetType::SlideRChance : TargetType::SlideR;
+			case ButtonType::Star:
+				return isDouble ? TargetType::StarW :
+					isLong ? TargetType::StarLong :
+					isChance ? TargetType::ChanceStar : TargetType::Star;
 			}
 
 			return TargetType::Circle;
+		}
+
+		constexpr PVCommandLayout::TargetType ButtonTypeToPVCommandTargetTypeF(const TimelineTarget& target)
+		{
+			using namespace PVCommandLayout;
+			const bool isChance = target.Flags.IsChance;
+			const bool isDouble = target.Flags.IsDouble;
+			const bool isLong = target.Flags.IsLong;
+			const i32 index = static_cast<i32>(target.Type);
+
+			const i32 normalIDs[7] = { 0, 1,  2,  3, 0, 0, 12 };
+			const i32 doubleIDs[7] = { 4, 5,  6,  7, 0, 0, 14 };
+			const i32 longIDs[7]   = { 8, 9, 10, 11, 0, 0, 13 };
+
+			if (target.Type == ButtonType::Star && isChance)
+				return static_cast<TargetType>(15);
+
+			if (isDouble)
+				return static_cast<TargetType>(doubleIDs[index]);
+
+			if (isLong)
+				return static_cast<TargetType>(longIDs[index]);
+
+			return static_cast<TargetType>(normalIDs[index]);
 		}
 
 		constexpr std::pair<Database::PVDifficultyType, Database::PVDifficultyEdition> DifficultyToPVDifficultyTypeAndEdition(const Difficulty difficulty)
@@ -110,7 +158,7 @@ namespace Comfy::Studio::Editor
 			}
 		}
 
-		PVScript ConvertChartToPVScript(const Chart& chart, vec4 backgroundTint = {})
+		PVScript ConvertChartToPVScript(const Chart& chart, vec4 backgroundTint = {}, ScriptConversionMode mode = ScriptConversionMode::Normal, std::vector<NCExtraInfo>* extraInfo = nullptr)
 		{
 			PVScriptBuilder scriptBuilder {};
 
@@ -154,6 +202,7 @@ namespace Comfy::Studio::Editor
 			// NOTE: Has to be larger than at least one diva time unit
 			constexpr TimeSpan minTimeBetweenPairsToPreventAccidentalSyncTargets = TimeSpan::FromMilliseconds(0.1);
 
+			size_t comboIndex = 0;
 			for (size_t targetIndex = 0; targetIndex < chart.Targets.size();)
 			{
 				const auto& firstTargetInSyncPair = chart.Targets[targetIndex];
@@ -183,20 +232,67 @@ namespace Comfy::Studio::Editor
 					if (targetInSyncPair.Flags.IsChain && !targetInSyncPair.Flags.IsChainStart)
 						targetProperties.Position.x += Rules::ChainFragmentStartEndOffsetDistance * (targetInSyncPair.Type == ButtonType::SlideL ? -1.0f : +1.0f);
 
-					auto targetCommand = PVCommandLayout::Target();
-					targetCommand.Type = ButtonTypeToPVCommandTargetType(targetInSyncPair);
-					targetCommand.PositionX = static_cast<i32>(targetProperties.Position.x * 250.0f);
-					targetCommand.PositionY = static_cast<i32>(targetProperties.Position.y * 250.0f);
-					targetCommand.Angle = static_cast<i32>(targetProperties.Angle * 1000.0f);
-					targetCommand.Distance = static_cast<i32>(targetProperties.Distance * 250.0f);
-					targetCommand.Amplitude = static_cast<i32>(targetProperties.Amplitude);
-					targetCommand.Frequency = static_cast<i32>(targetProperties.Frequency);
+					i32 posX = static_cast<i32>(targetProperties.Position.x * 250.0f);
+					i32 posY = static_cast<i32>(targetProperties.Position.y * 250.0f);
+					i32 angle = static_cast<i32>(targetProperties.Angle * 1000.0f);
+					i32 distance = static_cast<i32>(targetProperties.Distance * 250.0f);
+					i32 amplitude = static_cast<i32>(targetProperties.Amplitude);
+					i32 frequency = static_cast<i32>(targetProperties.Frequency);
 
-					scriptBuilder.Add(spawnTimes.TargetTime, targetCommand);
+					if (mode == ScriptConversionMode::Normal || mode == ScriptConversionMode::NC)
+					{
+						auto targetCommand = PVCommandLayout::Target();
+						targetCommand.Type = ButtonTypeToPVCommandTargetType(targetInSyncPair);
+						targetCommand.PositionX = posX;
+						targetCommand.PositionY = posY;
+						targetCommand.Angle = angle;
+						targetCommand.Distance = distance;
+						targetCommand.Amplitude = amplitude;
+						targetCommand.Frequency = frequency;
+
+						scriptBuilder.Add(spawnTimes.TargetTime, targetCommand);
+
+						if (extraInfo != nullptr)
+						{
+							if (targetInSyncPair.Flags.IsLong)
+							{
+								NCExtraInfo& info = extraInfo->emplace_back();
+								info.Index = comboIndex;
+								info.SubIndex = indexWithinPair;
+								info.Length = -1.0f;
+								info.IsEnd = targetInSyncPair.IsLongEnd();
+							}
+						}
+					}
+					else if (mode == ScriptConversionMode::F)
+					{
+						auto targetCommand = PVCommandLayout::TargetF();
+						targetCommand.Type = ButtonTypeToPVCommandTargetTypeF(targetInSyncPair);
+						targetCommand.Length = -1;
+						targetCommand.IsLongEnd = targetInSyncPair.IsLongEnd() ? 1 : -1;
+						targetCommand.PositionX = posX;
+						targetCommand.PositionY = posY;
+						targetCommand.Angle = angle;
+						targetCommand.Frequency = frequency;
+						targetCommand.Distance = distance;
+						targetCommand.Amplitude = amplitude;
+						targetCommand.FlyingTime = flyingTimeMS;
+						targetCommand.TimeSignature = 3;
+
+						if (targetInSyncPair.IsLongStart())
+						{
+							f32 fractions = chart.Targets.GetLengthInTicks(targetInSyncPair).BeatsFraction() / 4.0f;
+							if (fractions > 0.0f)
+								targetCommand.Length = static_cast<i32>(fractions * spawnTimes.FlyingTime.TotalSeconds() * 100000.0f);
+						}
+
+						scriptBuilder.Add(spawnTimes.TargetTime, targetCommand);
+					}
 				}
 
 				assert(firstTargetInSyncPair.Flags.SyncPairCount >= 1);
 				targetIndex += Max<i32>(1, firstTargetInSyncPair.Flags.SyncPairCount);
+				comboIndex++;
 			}
 
 			scriptBuilder.Add(chart.DurationOrDefault(), PVCommandLayout::PVEnd());
@@ -411,7 +507,7 @@ namespace Comfy::Studio::Editor
 				pvDB.append(b, sprintf_s(b, "pv_%03d.difficulty.%s.0.level=%s\n", inParam.OutPVID, pvDifficultyString, IndexOr(static_cast<u8>(inData.Chart->Properties.Difficulty.Level), Database::PVDifficultyLevelNames, "")));
 				pvDB.append(b, sprintf_s(b, "pv_%03d.difficulty.%s.0.level_sort_index=%d\n", inParam.OutPVID, pvDifficultyString, 50));
 				pvDB.append(b, sprintf_s(b, "pv_%03d.difficulty.%s.0.script_file_name=rom/", inParam.OutPVID, pvDifficultyString)).append(IO::Path::GetFileName(inParam.OutDsc)).append("\n");
-				pvDB.append(b, sprintf_s(b, "pv_%03d.difficulty.%s.0.script_format=0x%X\n", inParam.OutPVID, pvDifficultyString, static_cast<u32>(PVScriptVersion::Current)));
+				pvDB.append(b, sprintf_s(b, "pv_%03d.difficulty.%s.0.script_format=0x%X\n", inParam.OutPVID, pvDifficultyString, static_cast<u32>(PVScriptVersion::FT)));
 				pvDB.append(b, sprintf_s(b, "pv_%03d.difficulty.%s.0.version=%d\n", inParam.OutPVID, pvDifficultyString, 1));
 				pvDB.append(b, sprintf_s(b, "pv_%03d.difficulty.%s.length=%d\n", inParam.OutPVID, pvDifficultyString, 1));
 
@@ -916,13 +1012,38 @@ namespace Comfy::Studio::Editor
 		InternalOnClose();
 	}
 
-	void PVScriptExportWindow::ConvertAndSaveSimpleScriptSync(std::string_view outputScriptPath, const Chart& chart) const
+	void PVScriptExportWindow::ConvertAndSaveSimpleScriptSync(std::string_view outputScriptPath, const Chart& chart, ScriptConversionMode mode) const
 	{
 		if (outputScriptPath.empty())
 			return;
 
-		auto convertedPVScript = ConvertChartToPVScript(chart);
+		std::string csvFilePath = Comfy::IO::Path::ChangeExtension(outputScriptPath, ".csv");
+		std::vector<NCExtraInfo> ncExtraInfo;
+
+		auto convertedPVScript = ConvertChartToPVScript(chart, {}, mode, &ncExtraInfo);
+		convertedPVScript.Version = mode == ScriptConversionMode::F ? PVScriptVersion::F : PVScriptVersion::FT;
 		IO::File::Save(outputScriptPath, convertedPVScript);
+
+		if (ncExtraInfo.size() < 1)
+			return;
+
+		std::string csvData = "index,sub_index,length,end\n";
+		for (const NCExtraInfo& info : ncExtraInfo)
+		{
+			char buffer[128] = { 0 };
+			sprintf_s(buffer, "%d,%d,%.f,%s\n", info.Index, info.SubIndex, info.Length, info.IsEnd ? "true" : "false");
+			csvData += std::string(buffer);
+		}
+
+		IO::FileStream file = IO::File::CreateWrite(csvFilePath);
+		if (!file.CanWrite())
+		{
+			file.Close();
+			return;
+		}
+
+		file.WriteBuffer(csvData.data(), csvData.size());
+		file.Close();
 	}
 
 	void PVScriptExportWindow::StartAsyncExport(PVExportWindowInputData inData)

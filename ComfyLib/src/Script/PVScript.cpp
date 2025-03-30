@@ -69,7 +69,7 @@ namespace Comfy
 		while (readHead < commandsEnd)
 		{
 			const auto commandType = *reinterpret_cast<const PVCommandType*>(readHead);
-			const auto paramCount = GetPVCommandParamCount(commandType);
+			const auto paramCount = GetPVCommandParamCount(commandType, Version);
 
 			readHead += (1 + paramCount);
 			commandCount++;
@@ -81,7 +81,7 @@ namespace Comfy
 		for (size_t i = 0; i < commandCount; i++)
 		{
 			const auto commandType = *reinterpret_cast<const PVCommandType*>(readHead);
-			const auto paramCount = GetPVCommandParamCount(commandType);
+			const auto paramCount = GetPVCommandParamCount(commandType, Version);
 
 			auto& command = Commands.emplace_back();
 			command.Type = commandType;
@@ -97,7 +97,7 @@ namespace Comfy
 		for (const auto& command : Commands)
 		{
 			writer.WriteU32(static_cast<u32>(command.Type));
-			for (size_t i = 0; i < command.ParamCount(); i++)
+			for (size_t i = 0; i < command.ParamCount(Version); i++)
 				writer.WriteU32(command.Param[i]);
 		}
 
