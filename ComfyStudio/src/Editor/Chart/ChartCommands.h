@@ -121,6 +121,20 @@ namespace Comfy::Studio::Editor
 			// TODO: Optimizations for working on known size lists
 			for (auto& target : targets)
 				target.ID = chart.Targets.Add(target);
+
+			// NOTE: Resolve references
+			for (auto& undoTarget : targets)
+			{
+				TimelineTarget* target = chart.Targets.Find(undoTarget.ID);
+				if (!target)
+					continue;
+
+				if (auto* prev = chart.Targets.FindWithReferenceID(target->PreviousID); prev != nullptr)
+					target->PreviousID = prev->ID;
+
+				if (auto* next = chart.Targets.FindWithReferenceID(target->NextID); next != nullptr)
+					target->NextID = next->ID;
+			}
 		}
 
 		Undo::MergeResult TryMerge(Command& commandToMerge) override { return Undo::MergeResult::Failed; }

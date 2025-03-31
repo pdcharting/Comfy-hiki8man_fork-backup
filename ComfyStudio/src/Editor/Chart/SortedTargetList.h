@@ -204,8 +204,8 @@ namespace Comfy::Studio::Editor
 		i32 FindIndex(BeatTick tick) const;
 		i32 FindIndex(BeatTick tick, ButtonType type) const;
 		i32 FindIndex(TimelineTargetID id) const;
-		TimelineTarget* FindNext(const TimelineTarget& target);
-		TimelineTarget* FindPrevious(const TimelineTarget& target);
+		TimelineTarget* Find(TimelineTargetID id);
+		TimelineTarget* FindWithReferenceID(TimelineTargetID refID);
 		TimelineTarget* FindNextOrPrevious(const TimelineTarget& target);
 
 		Comfy::Studio::Editor::BeatTick GetLengthInTicks(const TimelineTarget& target) const;
