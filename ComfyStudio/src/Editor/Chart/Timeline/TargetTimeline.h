@@ -205,6 +205,7 @@ namespace Comfy::Studio::Editor
 
 		void FillInRangeSelectionTargets(Undo::UndoManager& undoManager, Chart& chart, ButtonType type);
 		TimelineTarget* PlaceOrRemoveTarget(Undo::UndoManager& undoManager, Chart& chart, BeatTick tick, ButtonType type);
+		void PlaceSustainTarget(Undo::UndoManager& undoManager, Chart& chart, BeatTick startTick, BeatTick endTick, ButtonType type);
 
 		void RemoveAllSelectedTargets(Undo::UndoManager& undoManager, Chart& chart, std::optional<size_t> preCalculatedSelectionCount = {});
 

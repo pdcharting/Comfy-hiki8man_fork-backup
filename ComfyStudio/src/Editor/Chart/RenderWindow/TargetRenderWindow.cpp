@@ -570,6 +570,7 @@ namespace Comfy::Studio::Editor
 		for (const auto& target : targets)
 		{
 			auto[targetTime, buttonTime, targetTick, buttonTick, flyingTime] = workingChart->TempoMap.GetTargetSpawnTimes(target);
+			f32 flyingTimeFactor = workingChart->TempoMap.FindFlyingTimeFactorAt(target.Tick);
 
 			// NOTE: To match the behavior during play testing and after exporting.
 			//		 This happens when a target is placed within the (first_bar / flying_time_factor)
@@ -642,14 +643,13 @@ namespace Comfy::Studio::Editor
 					if (target.IsLongStart())
 					{
 						f32 lengthFractions = workingChart->Targets.GetLengthInTicks(target).BeatsFraction();
-						f32 flyingTime = (buttonTime - targetTime).TotalSeconds();
-						f32 length = lengthFractions / 4.0f * flyingTime;
+						f32 length = lengthFractions / 4.0f * flyingTime.TotalSeconds();
 
 						auto& trailData = renderHelperEx.EmplaceButtonTrail();
 						renderHelperEx.ConstructButtonTrail(trailData, target.Type, progress, progressUnbound, properties, buttonTime - targetTime, target.Flags.IsChance);
 						trailData.Long = true;
-						trailData.Length = length;
-						trailData.FlyingTime = flyingTime;
+						trailData.Length = length * flyingTimeFactor;
+						trailData.FlyingTime = flyingTime.TotalSeconds();
 					}
 
 					if (target.Flags.IsSync && target.Flags.IndexWithinSyncPair == 0)

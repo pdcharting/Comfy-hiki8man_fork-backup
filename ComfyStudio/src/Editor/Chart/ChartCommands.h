@@ -135,6 +135,21 @@ namespace Comfy::Studio::Editor
 				if (auto* next = chart.Targets.FindWithReferenceID(target->NextID); next != nullptr)
 					target->NextID = next->ID;
 			}
+
+			// NOTE: Clear reference IDs
+			for (auto& undoTarget : targets)
+			{
+				if (auto* target = chart.Targets.Find(undoTarget.ID); target != nullptr)
+				{
+					if (auto* prev = chart.Targets.FindWithReferenceID(target->PreviousID); prev != nullptr)
+						prev->ReferenceID = TimelineTargetID::Null;
+
+					if (auto* next = chart.Targets.FindWithReferenceID(target->NextID); next != nullptr)
+						next->ReferenceID = TimelineTargetID::Null;
+
+					target->ReferenceID = TimelineTargetID::Null;
+				}
+			}
 		}
 
 		Undo::MergeResult TryMerge(Command& commandToMerge) override { return Undo::MergeResult::Failed; }
@@ -727,6 +742,48 @@ namespace Comfy::Studio::Editor
 		std::string_view GetName() const override { return "Toggle Target Holds"; }
 	};
 
+	class ConvertTargetsToLong : public Undo::Command
+	{
+	public:
+		ConvertTargetsToLong(Chart& chart, std::vector<TimelineTarget> targets) : chart(chart), targets(std::move(targets)) {}
+
+		void Undo() override
+		{
+			for (auto& undoTarget : targets)
+			{
+				if (TimelineTarget* target = chart.Targets.Find(undoTarget.ID); target != nullptr)
+				{
+					target->Flags.IsLong = false;
+					target->NextID = TimelineTargetID::Null;
+					target->PreviousID = TimelineTargetID::Null;
+				}
+			}
+		}
+
+		void Redo() override
+		{
+			// NOTE: Expects the targets array to be a multiple of 2 in size
+			for (size_t i = 0; i < targets.size(); i += 2)
+			{
+				TimelineTarget* startTarget = chart.Targets.Find(targets[i].ID);
+				TimelineTarget* endTarget = chart.Targets.Find(targets[i + 1].ID);
+				if (!startTarget || !endTarget)
+					continue;
+
+				startTarget->Flags.IsLong = true;
+				startTarget->NextID = endTarget->ID;
+				endTarget->Flags.IsLong = true;
+				endTarget->PreviousID = startTarget->ID;
+			}
+		}
+
+		Undo::MergeResult TryMerge(Command& command) { return Undo::MergeResult::Failed; }
+	private:
+		Chart& chart;
+		std::vector<TimelineTarget> targets;
+	public:
+		std::string_view GetName() const override { return "Convert Targets to Sustains"; }
+	};
 }
 
 namespace Comfy::Studio::Editor

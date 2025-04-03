@@ -221,6 +221,9 @@ namespace Comfy::Studio::Editor
 
 	TimelineTarget* SortedTargetList::Find(TimelineTargetID id)
 	{
+		if (id == TimelineTargetID::Null)
+			return nullptr;
+
 		i32 index = FindIndex(id);
 		if (index != -1)
 			return &targets[index];

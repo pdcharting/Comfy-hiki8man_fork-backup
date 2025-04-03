@@ -1846,8 +1846,11 @@ namespace Comfy::Studio::Editor
 			&GlobalUserData.Input.TargetTimeline_PlaceCircle,
 			nullptr,
 			nullptr,
-			nullptr
+			&GlobalUserData.Input.TargetTimeline_PlaceStar
 		};
+
+		if (rangeSelection.IsActive)
+			return false;
 
 		if (!isPlacingRangedNote && Gui::GetIO().KeyShift)
 		{
@@ -1871,17 +1874,8 @@ namespace Comfy::Studio::Editor
 			if (Input::IsAnyPressed(*keys[static_cast<size_t>(placingButtonType)], false, Input::ModifierBehavior_Relaxed))
 			{
 				BeatTick curTick = GetTargetPlacementCursorTickWithAdjustedOffsetSetting();
-				TimelineTarget* start = PlaceOrRemoveTarget(undoManager, *workingChart, placingButtonStartTick, placingButtonType);
-				TimelineTarget* end = PlaceOrRemoveTarget(undoManager, *workingChart, curTick, placingButtonType);
-
-				if (start != nullptr && end != nullptr)
-				{
-					start->NextID = end->ID;
-					start->Flags.IsLong = true;
-					end->PreviousID = start->ID;
-					end->Flags.IsLong = true;
-				}
-
+				PlaceSustainTarget(undoManager, *workingChart, placingButtonStartTick, curTick, placingButtonType);
+				
 				PlayTargetButtonTypeSound(placingButtonType);
 				isPlacingRangedNote = false;
 				placingButtonType = ButtonType::Count;
@@ -1983,6 +1977,40 @@ namespace Comfy::Studio::Editor
 
 			if (Gui::MenuItem("Toggle Target Holds", Input::ToString(GlobalUserData.Input.TargetTimeline_ToggleTargetHolds).data(), nullptr, anyHoldToggableTargetSelected))
 				ToggleSelectedTargetsHolds(undoManager, *workingChart);
+
+			auto isSelectionConvertableToLong = [&]()
+			{
+				if (selectionCount % 2 != 0)
+					return false;
+
+				ButtonType lookingForType = ButtonType::Count;
+				for (const auto& target : workingChart->Targets)
+				{
+					if (!target.IsSelected)
+						continue;
+
+					if (IsSlideButtonType(target.Type) || target.Flags.IsLong)
+						return false;
+
+					if (lookingForType == ButtonType::Count)
+						lookingForType = target.Type;
+					else if (target.Type != lookingForType)
+						return false;
+					else if (target.Type == lookingForType)
+						lookingForType = ButtonType::Count;
+				}
+
+				return true;
+			};
+
+			if (Gui::MenuItem("Convert to Sustain(s)", "", nullptr, isSelectionConvertableToLong()))
+			{
+				std::vector<TimelineTarget> targets;
+				for (auto& target : workingChart->Targets)
+					targets.push_back(target);
+
+				undoManager.Execute<ConvertTargetsToLong>(*workingChart, targets);
+			}
 
 			if (Gui::BeginMenu("Modify Targets", (selectionCount > 0)))
 			{
@@ -2109,18 +2137,34 @@ namespace Comfy::Studio::Editor
 					return (y >= minY && y <= maxY) && (target.Tick >= minTick && target.Tick <= maxTick);
 				};
 
+				auto forceSelectBothLongSides = [&](const TimelineTarget& target, bool select)
+				{
+					if (!target.Flags.IsLong)
+						return;
+
+					if (auto* other = workingChart->Targets.FindNextOrPrevious(target); other != nullptr)
+						other->IsSelected = select;
+				};
+
 				switch (boxSelection.Action)
 				{
 				case BoxSelectionData::ActionType::Clean:
 					for (auto& target : workingChart->Targets)
 						target.IsSelected = isTargetInSelectionRange(target);
+
+					/*for (auto& target : workingChart->Targets)
+						if (target.IsSelected) forceSelectBothLongSides(target, true);*/
+
 					break;
 
 				case BoxSelectionData::ActionType::Add:
 					for (auto& target : workingChart->Targets)
 					{
 						if (isTargetInSelectionRange(target))
+						{
 							target.IsSelected = true;
+							//forceSelectBothLongSides(target, true);
+						}
 					}
 					break;
 
@@ -2128,7 +2172,10 @@ namespace Comfy::Studio::Editor
 					for (auto& target : workingChart->Targets)
 					{
 						if (isTargetInSelectionRange(target))
+						{
 							target.IsSelected = false;
+							//forceSelectBothLongSides(target, false);
+						}
 					}
 					break;
 
@@ -2417,6 +2464,26 @@ namespace Comfy::Studio::Editor
 			PlaySingleTargetButtonSoundAndAnimation(targets.front());
 			undoManager.Execute<AddTargetList>(chart, std::move(targets));
 		}
+	}
+
+	void TargetTimeline::PlaceSustainTarget(Undo::UndoManager& undoManager, Chart& chart, BeatTick startTick, BeatTick endTick, ButtonType type)
+	{
+		if (GetIsPlayback())
+			return;
+
+		std::vector<TimelineTarget> targets;
+		targets.reserve(2); // WHY THE HELL DOES THE START TARGET BREAK WHEN I DON'T RESERVE THE SPACE?!?!
+
+		TimelineTarget& startTarget = targets.emplace_back(startTick, type);
+		TimelineTarget& endTarget = targets.emplace_back(endTick, type);
+		startTarget.Flags.IsLong = true;
+		startTarget.ReferenceID = static_cast<TimelineTargetID>(100000);
+		startTarget.NextID = static_cast<TimelineTargetID>(100001);
+		endTarget.Flags.IsLong = true;
+		endTarget.ReferenceID = startTarget.NextID;
+		endTarget.PreviousID = startTarget.ReferenceID;
+
+		undoManager.Execute<AddTargetList>(chart, std::move(targets));
 	}
 
 	TimelineTarget* TargetTimeline::PlaceOrRemoveTarget(Undo::UndoManager& undoManager, Chart& chart, BeatTick tick, ButtonType type)
