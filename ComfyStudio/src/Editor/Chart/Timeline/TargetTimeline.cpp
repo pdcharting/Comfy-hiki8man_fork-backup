@@ -2007,7 +2007,8 @@ namespace Comfy::Studio::Editor
 			{
 				std::vector<TimelineTarget> targets;
 				for (auto& target : workingChart->Targets)
-					targets.push_back(target);
+					if (target.IsSelected)
+						targets.push_back(target);
 
 				undoManager.Execute<ConvertTargetsToLong>(*workingChart, targets);
 			}
