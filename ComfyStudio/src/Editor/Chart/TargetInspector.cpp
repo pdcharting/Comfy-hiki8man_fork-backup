@@ -229,6 +229,23 @@ namespace Comfy::Studio::Editor
 				if (!targetData.empty())
 					undoManager.Execute<ChangeTargetListHasProperties>(chart, std::move(targetData), !newValue);
 			});
+			// Add change success note support
+			auto isChanceValueGetter = [](auto& t) { return static_cast<GuiProperty::Boolean>(t.Flags.IsChance); };
+			BooleanGui("Is Chance", isChanceValueGetter, [](auto& t) { return true; }, [&](const bool newValue)
+				{
+					std::vector<ChangeTargetListIsChance::Data> targetData;
+					targetData.reserve(selectedTargets.size());
+
+					for (const auto& targetView : selectedTargets)
+					{
+						auto& data = targetData.emplace_back();
+						data.ID = targetView.Target->ID;
+						data.NewValue = newValue;
+					}
+
+					if (!targetData.empty())
+						undoManager.Execute<ChangeTargetListIsChance>(chart, std::move(targetData));
+				});
 
 			PropertyGui(chart, "Position X", TargetPropertyType_PositionX);
 			PropertyGui(chart, "Position Y", TargetPropertyType_PositionY);

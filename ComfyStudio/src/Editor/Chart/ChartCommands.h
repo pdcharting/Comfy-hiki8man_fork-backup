@@ -635,6 +635,58 @@ namespace Comfy::Studio::Editor
 		bool newHasProperties;
 	};
 
+	// Add change success note support
+	class ChangeTargetListIsChance : public Undo::Command
+	{
+	public:
+		struct Data
+		{
+			TimelineTargetID ID;
+			bool NewValue, OldValue;
+		};
+
+	public:
+		ChangeTargetListIsChance(Chart& chart, std::vector<Data> data)
+			: chart(chart), targetData(std::move(data))
+		{
+			for (auto& data : targetData)
+			{
+				const auto& target = chart.Targets[chart.Targets.FindIndex(data.ID)];
+				data.OldValue = target.Flags.IsChance;
+			}
+		}
+
+	public:
+		void Undo() override
+		{
+			for (const auto& data : targetData)
+			{
+				auto& target = chart.Targets[chart.Targets.FindIndex(data.ID)];
+				target.Flags.IsChance = data.OldValue;
+			}
+		}
+
+		void Redo() override
+		{
+			for (const auto& data : targetData)
+			{
+				auto& target = chart.Targets[chart.Targets.FindIndex(data.ID)];
+				target.Flags.IsChance = data.NewValue;
+			}
+		}
+
+		Undo::MergeResult TryMerge(Command& commandToMerge) override
+		{
+			return Undo::MergeResult::Failed;
+		}
+
+		std::string_view GetName() const override { return "Change Chance Target"; }
+
+	private:
+		Chart& chart;
+		std::vector<Data> targetData;
+	};
+
 	class ChangeTargetListIsHold : public Undo::Command
 	{
 	public:
