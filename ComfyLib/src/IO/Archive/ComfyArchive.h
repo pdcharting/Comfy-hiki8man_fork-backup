@@ -120,7 +120,7 @@ namespace Comfy::IO
 
 			auto fileBuffer = std::vector<u8>(entry->Size);
 			if (!ReadFileIntoBuffer(entry, fileBuffer.data()))
-				return false;
+				return nullptr;
 
 			auto stream = MemoryStream();
 			stream.FromStreamSource(fileBuffer);
