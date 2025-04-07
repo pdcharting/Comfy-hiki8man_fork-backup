@@ -2,6 +2,7 @@
 #include "FileStream.h"
 #include "Misc/StringUtil.h"
 #include <algorithm>
+#include <iterator>
 
 namespace Comfy::IO
 {

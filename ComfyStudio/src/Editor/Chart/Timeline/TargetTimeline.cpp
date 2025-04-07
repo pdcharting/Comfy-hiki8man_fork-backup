@@ -5,6 +5,7 @@
 #include "Time/TimeSpan.h"
 #include "ImGui/Extensions/PropertyEditor.h"
 #include <FontIcons.h>
+#include <iterator>
 
 // BUG: SELECTING MOVING AND OR MODIFTING CHAIN SLIDES CAN SPAM COMMANDS AND FUCK FRAMETIMES, IS SOMETHING WRONG WITH TimelineTargetID??
 // BUG: "Dagorth Ur" incorrect silent single pixel height waveform part visible right at the start when timeline is scrolled just slightly to the right --> TargetTimeline::DrawCheckUpdateWaveform()
