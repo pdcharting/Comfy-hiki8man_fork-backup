@@ -1215,8 +1215,10 @@ namespace Comfy::Studio
 
 					if (const Value* targetDataArrayJson = Find(syncPresetJson, UserIDs::TargetPreset_StaticSyncPresets_Targets); targetDataArrayJson && targetDataArrayJson->IsArray())
 					{
-						for (const Value& targetDataJson : targetDataArrayJson->GetArray())
+						const auto& targetDataArray = targetDataArrayJson->GetArray();
+						for (size_t i = targetDataArray.Size(); i-- > 0;)
 						{
+							const Value& targetDataJson = targetDataArray[i];
 							if (syncPreset.TargetCount < syncPreset.Targets.size())
 							{
 								auto& targetData = syncPreset.Targets[syncPreset.TargetCount++];

@@ -244,7 +244,7 @@ namespace Comfy::Studio::Editor
 					return { Detail::PresetTargetPosition(type, tick, flags), 0.0f, -2.0f, 500.0f, 1200.0f, };
 
 				const bool upperHalfOfPair = IsUpperPartOfSyncPair(type, flags);
-				const auto angle = VerticalSyncPairAngles[static_cast<size_t>(upperHalfOfPair ? AngleCorner::TopRight : AngleCorner::BotRight)];
+				const auto angle = VerticalSyncPairAngles[static_cast<size_t>(!upperHalfOfPair ? AngleCorner::TopRight : AngleCorner::BotRight)];
 				return { Detail::PresetTargetPosition(type, tick, flags), angle, 0.0f, 500.0f, 880.0f, };
 			}
 
