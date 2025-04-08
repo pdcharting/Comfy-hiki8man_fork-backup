@@ -89,10 +89,10 @@ namespace Comfy::Studio::Editor
 		{
 			if (pairCount != expectedTypesArray.size())
 				return false;
-
+			const auto maxindex = expectedTypesArray.size() - 1;
 			for (size_t i = 0; i < expectedTypesArray.size(); i++)
 			{
-				if (syncPair[i].Type != expectedTypesArray[i])
+				if (syncPair[i].Type != expectedTypesArray[maxindex - i])
 					return false;
 			}
 			return true;
