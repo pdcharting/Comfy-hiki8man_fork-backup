@@ -157,9 +157,9 @@ namespace Comfy::Studio::Editor
 					}
 
 					if (settings.SameDirectionAngles)
-						slaveProperties.Angle = Detail::IsUpperPartOfSyncPair(masterTargetType, masterTarget.Flags) ? upperAngle : lowerAngle;
+						slaveProperties.Angle = !Detail::IsUpperPartOfSyncPair(masterTargetType, masterTarget.Flags) ? upperAngle : lowerAngle;
 					else
-						slaveProperties.Angle = Detail::IsUpperPartOfSyncPair(slaveTargetType, slaveTarget.Flags) ? upperAngle : lowerAngle;
+						slaveProperties.Angle = !Detail::IsUpperPartOfSyncPair(slaveTargetType, slaveTarget.Flags) ? upperAngle : lowerAngle;
 
 					if (preset == DynamicSyncPreset::VerticalLeft)
 						slaveProperties.Angle *= -1.0f;
@@ -209,9 +209,9 @@ namespace Comfy::Studio::Editor
 					else
 					{
 						if (settings.SameDirectionAngles)
-							slaveProperties.Angle = Detail::IsUpperPartOfSyncPair(masterTarget.Type, masterTarget.Flags) ? leftAngle : rightAngle;
+							slaveProperties.Angle = !Detail::IsUpperPartOfSyncPair(masterTarget.Type, masterTarget.Flags) ? leftAngle : rightAngle;
 						else
-							slaveProperties.Angle = Detail::IsUpperPartOfSyncPair(slaveTarget.Type, slaveTarget.Flags) ? leftAngle : rightAngle;
+							slaveProperties.Angle = !Detail::IsUpperPartOfSyncPair(slaveTarget.Type, slaveTarget.Flags) ? leftAngle : rightAngle;
 					}
 
 					if (preset == DynamicSyncPreset::HorizontalDown)

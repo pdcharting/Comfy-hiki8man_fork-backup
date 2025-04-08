@@ -227,9 +227,9 @@ namespace Comfy::Studio::Editor
 				if (flags.SyncPairCount == 3)
 				{
 					if (type == ButtonType::Square && flags.IndexWithinSyncPair == 1)
-						return true;
-					if (type == ButtonType::Cross)
 						return false;
+					if (type == ButtonType::Cross)
+						return true;
 				}
 
 				return false;
