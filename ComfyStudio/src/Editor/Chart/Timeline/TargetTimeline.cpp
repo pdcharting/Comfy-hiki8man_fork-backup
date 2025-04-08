@@ -450,6 +450,7 @@ namespace Comfy::Studio::Editor
 			Count
 		};
 
+		//Remove TargetTimelineInfoColumnClickBehavior
 		static constexpr auto settingsClickBehavior = TargetTimelineInfoColumnClickBehavior::None;
 
 		if (settingsClickBehavior != TargetTimelineInfoColumnClickBehavior::None)
