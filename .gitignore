@@ -350,6 +350,3 @@ ASALocalRun/
 
 # Windows shortcut file
 *.lnk
-/ComfyStudio/settings_app.json
-/ComfyStudio/settings_imgui.ini
-/ComfyStudio/settings_user.json
