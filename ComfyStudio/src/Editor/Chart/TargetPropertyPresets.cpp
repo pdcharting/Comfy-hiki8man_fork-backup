@@ -300,15 +300,15 @@ namespace Comfy::Studio::Editor
 
 			if (pairCount != preset.TargetCount)
 				return false;
-
+			const auto maxindex = pairCount - 1;
 			for (size_t i = 0; i < pairCount; i++)
 			{
-				if (preset.Targets[i].Type != syncPair[i].Type)
+				if (preset.Targets[i].Type != syncPair[maxindex - i].Type)
 					return false;
 			}
 
 			for (size_t i = 0; i < pairCount; i++)
-				outProperties[i].NewValue = preset.Targets[i].Properties;
+				outProperties[maxindex - i].NewValue = preset.Targets[i].Properties;
 
 			return true;
 		}
