@@ -300,6 +300,7 @@ namespace Comfy::Studio::Editor
 
 			if (pairCount != preset.TargetCount)
 				return false;
+			// SyncPreset is use TSXO, we need let it change to OXST
 			const auto maxindex = pairCount - 1;
 			for (size_t i = 0; i < pairCount; i++)
 			{
