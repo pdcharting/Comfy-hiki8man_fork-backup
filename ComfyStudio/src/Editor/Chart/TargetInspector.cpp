@@ -231,6 +231,7 @@ namespace Comfy::Studio::Editor
 			});
 			// Add change success note support
 			auto isChanceValueGetter = [](auto& t) { return static_cast<GuiProperty::Boolean>(t.Flags.IsChance); };
+			auto isChanceConditionGetter = [](auto& t) { return !t.Flags.IsChain; };
 			BooleanGui("Is Chance", isChanceValueGetter, [](auto& t) { return true; }, [&](const bool newValue)
 				{
 					std::vector<ChangeTargetListIsChance::Data> targetData;
@@ -238,6 +239,9 @@ namespace Comfy::Studio::Editor
 
 					for (const auto& targetView : selectedTargets)
 					{
+						if (!isChanceConditionGetter(*targetView))
+							continue;
+
 						auto& data = targetData.emplace_back();
 						data.ID = targetView.Target->ID;
 						data.NewValue = newValue;
