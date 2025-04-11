@@ -2284,6 +2284,9 @@ namespace Comfy::Studio::Editor
 		if (selectedTargetCount < 1)
 			return;
 
+		const auto cursorTick = GetCursorTick();
+		bool hasAnyButtonSoundBeenPlayed = false;
+
 		std::vector<ToggleTargetListIsChance::Data> commandData;
 		commandData.reserve(selectedTargetCount);
 
@@ -2295,10 +2298,29 @@ namespace Comfy::Studio::Editor
 			auto& data = commandData.emplace_back();
 			data.ID = target.ID;
 			data.NewValue = !target.Flags.IsChance;
+
+			if (target.Tick == cursorTick && target.Flags.IsChance != data.NewValue)
+			{
+				PlaySingleTargetButtonSoundAndAnimation(target.Type, target.Tick);
+				hasAnyButtonSoundBeenPlayed = true;
+			}
 		}
 
 		if (!commandData.empty())
 		{
+			if (!hasAnyButtonSoundBeenPlayed)
+			{
+				const auto& frontTarget = chart.Targets[chart.Targets.FindIndex(commandData.front().ID)];
+				for (const auto& data : commandData)
+				{
+					const auto& target = chart.Targets[chart.Targets.FindIndex(data.ID)];
+					if (target.Tick != frontTarget.Tick)
+						break;
+
+					PlaySingleTargetButtonSoundAndAnimation(target.Type, target.Tick);
+				}
+			}
+
 			undoManager.Execute<ToggleTargetListIsChance>(*workingChart, std::move(commandData));
 		}
 	}
