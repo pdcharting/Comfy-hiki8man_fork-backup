@@ -59,12 +59,16 @@ namespace Comfy::Studio::Editor
 		const auto topLeft = position - (radius * 0.5f);
 		const auto bottomRight = position + (radius * 0.5f);
 
+		// Let Target Chance looks better
+		const auto chancetopLeft = topLeft - 2.0f;
+		const auto chancebottomRight = bottomRight + 2.0f;
+
 		const auto color = IM_COL32(0xFF, 0xFF, 0xFF, 0xFF * transparency);
 
 		if (target.Flags.IsChance)
 		{
 			if (const auto chancebuttonSpr = GetChanceButtonSpriteForTarget(target); chancebuttonSpr != nullptr)
-				Gui::AddSprite(drawList, *editorSprites, *chancebuttonSpr, topLeft, bottomRight, color);
+				Gui::AddSprite(drawList, *editorSprites, *chancebuttonSpr, chancetopLeft, chancebottomRight, color);
 			else
 				drawList->AddText(Gui::GetFont(), 12.0f, position + vec2(-12.0f, 0.0f), color, "CHANCE");
 		}

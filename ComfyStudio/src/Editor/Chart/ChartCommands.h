@@ -687,6 +687,15 @@ namespace Comfy::Studio::Editor
 		std::vector<Data> targetData;
 	};
 
+	class ToggleTargetListIsChance : public ChangeTargetListIsChance
+	{
+	public:
+		using ChangeTargetListIsChance::ChangeTargetListIsChance;
+
+	public:
+		std::string_view GetName() const override { return "Toggle Target Chance"; }
+	};
+
 	class ChangeTargetListIsHold : public Undo::Command
 	{
 	public:
