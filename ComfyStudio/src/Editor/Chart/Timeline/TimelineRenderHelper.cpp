@@ -60,8 +60,8 @@ namespace Comfy::Studio::Editor
 		const auto bottomRight = position + (radius * 0.5f);
 
 		// Let Target Chance looks better
-		const auto chancetopLeft = topLeft - 2.0f;
-		const auto chancebottomRight = bottomRight + 2.0f;
+		const auto chancetopLeft = topLeft - 4.0f;
+		const auto chancebottomRight = bottomRight + 4.0f;
 
 		const auto color = IM_COL32(0xFF, 0xFF, 0xFF, 0xFF * transparency);
 
