@@ -94,7 +94,7 @@ namespace Comfy::Studio::Editor
 			if (const auto chancebuttonSpr = GetChanceButtonSpriteForTarget(target); chancebuttonSpr != nullptr)
 				Gui::AddSprite(drawList, *editorSprites, *chancebuttonSpr, chancetopLeft, chancebottomRight, color);
 			else
-				drawList->AddText(Gui::GetFont(), 12.0f, position + vec2(-12.0f, 0.0f), color, "CHANCE");
+				drawList->AddText(Gui::GetFont(), 12.0f, position + vec2(-18.0f, 0.0f), color, "CHANCE");
 		}
 		if (const auto buttonSpr = GetButtonSpriteForTarget(target); buttonSpr != nullptr)
 
