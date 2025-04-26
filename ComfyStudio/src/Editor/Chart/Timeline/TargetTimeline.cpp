@@ -2032,7 +2032,7 @@ namespace Comfy::Studio::Editor
 
 		for (const auto& target : workingChart->Targets)
 		{
-			if (!target.IsSelected || IsSlideButtonType(target.Type))
+			if (!target.IsSelected || IsSlideButtonType(target.Type) || target.Flags.IsChance)
 				continue;
 
 			auto& data = commandData.emplace_back();
@@ -2079,7 +2079,7 @@ namespace Comfy::Studio::Editor
 
 		for (const auto& target : workingChart->Targets)
 		{
-			if (!target.IsSelected || target.Flags.IsChain)
+			if (!target.IsSelected || target.Flags.IsChain || target.Flags.IsHold)
 				continue;
 
 			auto& data = commandData.emplace_back();
