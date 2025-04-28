@@ -12,7 +12,7 @@ namespace Comfy::Studio::Editor
 	namespace ChartFileFormat
 	{
 		// NOTE: Increment major version for breaking changes and minor version for backwards and forward compatible additions
-		enum class Version : u16 { CurrentMajor = 1, CurrentMinor = 8, };
+		enum class Version : u16 { CurrentMajor = 2, CurrentMinor = 0, };
 		enum class Endianness : u16 { Little = 'L', Big = 'B' };
 		enum class PointerSize : u16 { Bit32 = 32, Bit64 = 64 };
 		enum class HeaderFlags : u32 { None = 0xFFFFFFFF };
@@ -100,9 +100,10 @@ namespace Comfy::Studio::Editor
 			void(*WriteFunc)(IO::StreamWriter&, const TimelineTarget&);
 		};
 
-		constexpr std::array<TargetField, 16> TargetFields =
+		constexpr std::array<TargetField, 17> TargetFields =
 		{
 			TargetField { "Tick", sizeof(i32), [](IO::StreamReader& r, TimelineTarget& t) { t.Tick = BeatTick(r.ReadI32()); }, [](IO::StreamWriter& writer, const TimelineTarget& target) { writer.WriteI32(target.Tick.Ticks()); } },
+			TargetField { "EndTick", sizeof(i32), [](IO::StreamReader& r, TimelineTarget& t) { r.ReadI32(); }, [](IO::StreamWriter& writer, const TimelineTarget& target) { writer.WriteI32(-1); } },
 			TargetField { "Type", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Type = static_cast<ButtonType>(r.ReadU8()); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(static_cast<u8>(t.Type)); } },
 			TargetField { "Properties", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Flags.HasProperties = r.ReadU8(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(t.Flags.HasProperties); } },
 			TargetField { "Hold", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Flags.IsHold = r.ReadU8(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(t.Flags.IsHold); } },
