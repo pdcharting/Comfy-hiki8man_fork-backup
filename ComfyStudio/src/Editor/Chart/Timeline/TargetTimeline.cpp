@@ -1846,10 +1846,13 @@ namespace Comfy::Studio::Editor
 			auto isTargetSelectedAndHoldToggable = [](const TimelineTarget& t) -> bool { return t.IsSelected && !IsSlideButtonType(t.Type); };
 			const bool anyHoldToggableTargetSelected = (selectionCount > 0) && std::any_of(workingChart->Targets.begin(), workingChart->Targets.end(), isTargetSelectedAndHoldToggable);
 
+			auto isTargetSelectedAndChanceToggable = [](const TimelineTarget& t) -> bool { return t.IsSelected && !t.Flags.IsChain; };
+			const bool anyChanceToggableTargetSelected = (selectionCount > 0) && std::any_of(workingChart->Targets.begin(), workingChart->Targets.end(), isTargetSelectedAndChanceToggable);
+
 			if (Gui::MenuItem("Toggle Target Holds", Input::ToString(GlobalUserData.Input.TargetTimeline_ToggleTargetHolds).data(), nullptr, anyHoldToggableTargetSelected))
 				ToggleSelectedTargetsHolds(undoManager, *workingChart);
 			// Add Toggle Chance option in menu
-			if (Gui::MenuItem("Toggle Target Chance", Input::ToString(GlobalUserData.Input.TargetTimeline_ToggleTargetChance).data(), nullptr, anyHoldToggableTargetSelected))
+			if (Gui::MenuItem("Toggle Target Chance", Input::ToString(GlobalUserData.Input.TargetTimeline_ToggleTargetChance).data(), nullptr, anyChanceToggableTargetSelected))
 				ToggleSelectedTargetsChance(undoManager, *workingChart);
 
 			if (Gui::BeginMenu("Modify Targets", (selectionCount > 0)))
