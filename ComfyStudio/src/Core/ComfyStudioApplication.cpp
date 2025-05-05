@@ -372,7 +372,7 @@ namespace Comfy::Studio
 				imGuiLayoutHasBeenSetToDefaultWhileCurrentPopupOpen = false;
 			}
 			//暂无作用，添加固定布局按钮
-			Gui::MenuItemDontClosePopup("Fix DockPanel", nullptr, false, false);
+			//Gui::MenuItemDontClosePopup("Fix DockPanel", nullptr, false, false);
 
 			Gui::EndMenu();
 		}
