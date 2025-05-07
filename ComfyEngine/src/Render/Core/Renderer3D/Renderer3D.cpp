@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "Renderer3D.h"
 #include "Detail/ConstantData.h"
 #include "Detail/GaussianBlur.h"

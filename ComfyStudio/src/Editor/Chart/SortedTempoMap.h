@@ -159,6 +159,8 @@ namespace Comfy::Studio::Editor
 		// NOTE: Mainly for skipping past TempoChanges without tempo signatures while iterating over bars/beats
 		const TempoChange* FindNextTempoChangeWithValidSignatureAt(size_t startIndex) const;
 
+		f32 FindFlyingTimeFactorAt(BeatTick tick) const;
+
 		size_t Count() const;
 		void Reset();
 

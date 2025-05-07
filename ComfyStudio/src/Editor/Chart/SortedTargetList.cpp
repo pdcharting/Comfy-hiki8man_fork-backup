@@ -122,6 +122,16 @@ namespace Comfy::Studio::Editor
 		}
 	}
 
+	bool TimelineTarget::IsLongStart() const
+	{
+		return Flags.IsLong && static_cast<i32>(NextID) != 0;
+	}
+
+	bool TimelineTarget::IsLongEnd() const
+	{
+		return Flags.IsLong && static_cast<i32>(PreviousID) != 0;
+	}
+
 	TimelineTargetID SortedTargetList::GetNextUniqueID()
 	{
 		return static_cast<TimelineTargetID>(++GlobalTimelineTargetIDCounter);
@@ -209,6 +219,51 @@ namespace Comfy::Studio::Editor
 		return foundIndex;
 	}
 
+	TimelineTarget* SortedTargetList::Find(TimelineTargetID id)
+	{
+		if (id == TimelineTargetID::Null)
+			return nullptr;
+
+		i32 index = FindIndex(id);
+		if (index != -1)
+			return &targets[index];
+		return nullptr;
+	}
+
+	TimelineTarget* SortedTargetList::FindWithReferenceID(TimelineTargetID refID)
+	{
+		if (refID == TimelineTargetID::Null)
+			return nullptr;
+
+		for (auto& target : targets)
+		{
+			if (target.ReferenceID == refID)
+				return &target;
+		}
+
+		return nullptr;
+	}
+
+	TimelineTarget* SortedTargetList::FindNextOrPrevious(const TimelineTarget& target)
+	{
+		TimelineTarget* next = Find(target.NextID);
+		if (next != nullptr)
+			return next;
+		return Find(target.PreviousID);
+	}
+
+	Comfy::Studio::Editor::BeatTick SortedTargetList::GetLengthInTicks(const TimelineTarget& target) const
+	{
+		if (target.IsLongStart() && static_cast<i32>(target.NextID) != 0)
+		{
+			i32 index = FindIndex(target.NextID);
+			if (index != -1)
+				return targets[index].Tick - target.Tick;
+		}
+
+		return Comfy::Studio::Editor::BeatTick::Zero();
+	}
+
 	void SortedTargetList::Clear()
 	{
 		targets.clear();
@@ -267,6 +322,8 @@ namespace Comfy::Studio::Editor
 			assert(targets[i].ID == TimelineTargetID::Null);
 			idToIndexMap[targets[i].ID = GetNextUniqueID()] = i;
 		}
+
+		ResolveNewTargetReferenceIDs();
 	}
 
 	size_t SortedTargetList::FindSortedInsertionIndex(BeatTick tick, ButtonType type) const
@@ -304,6 +361,29 @@ namespace Comfy::Studio::Editor
 
 		// TODO: Floor and ceil to "slide -> slide chain" transitions (?)
 		UpdateChainFlagsInRange(0, static_cast<i32>(targets.size()));
+	}
+
+	TimelineTargetID SortedTargetList::FindNewTargetID(TimelineTargetID referenceID)
+	{
+		for (const auto& target : targets)
+		{
+			if (target.ReferenceID == referenceID)
+				return target.ID;
+		}
+
+		return TimelineTargetID::Null;
+	}
+
+	void SortedTargetList::ResolveNewTargetReferenceIDs()
+	{
+		for (auto& target : targets)
+		{
+			if (target.NextID != TimelineTargetID::Null)
+				target.NextID = FindNewTargetID(target.NextID);
+
+			if (target.PreviousID != TimelineTargetID::Null)
+				target.PreviousID = FindNewTargetID(target.ReferenceID);
+		}
 	}
 
 	i32 SortedTargetList::FloorIndexToSyncPairStart(i32 index) const

@@ -39,13 +39,18 @@ namespace Comfy::Studio::Editor
 
 			char b[2048];
 			buffer += std::string_view(b, sprintf_s(b,
-				"\nTarget { %d %d %d %d %d %d %.2f %.2f %.2f %.2f %.2f %.2f };",
+				"\nTarget { %d %d %d %d %d %d %d %d %d %d %d %.2f %.2f %.2f %.2f %.2f %.2f };",
 				static_cast<i32>(target.Tick.Ticks()),
 				static_cast<i32>(target.Type),
 				static_cast<i32>(flags.HasProperties),
 				static_cast<i32>(flags.IsHold),
 				static_cast<i32>(flags.IsChain),
 				static_cast<i32>(flags.IsChance),
+				static_cast<i32>(flags.IsDouble),
+				static_cast<i32>(flags.IsLong),
+				static_cast<i32>(target.ID), // Reference ID
+				static_cast<i32>(target.PreviousID),
+				static_cast<i32>(target.NextID),
 				static_cast<f32>(properties.Position.x),
 				static_cast<f32>(properties.Position.y),
 				static_cast<f32>(properties.Angle),
@@ -97,6 +102,11 @@ namespace Comfy::Studio::Editor
 				newTarget.Flags.IsHold = parseI32(); advanceWord();
 				newTarget.Flags.IsChain = parseI32(); advanceWord();
 				newTarget.Flags.IsChance = parseI32(); advanceWord();
+				newTarget.Flags.IsDouble = parseI32(); advanceWord();
+				newTarget.Flags.IsLong = parseI32(); advanceWord();
+				newTarget.ReferenceID = static_cast<TimelineTargetID>(parseI32()); advanceWord();
+				newTarget.PreviousID = static_cast<TimelineTargetID>(parseI32()); advanceWord();
+				newTarget.NextID = static_cast<TimelineTargetID>(parseI32()); advanceWord();
 				newTarget.Properties.Position.x = parseF32(); advanceWord();
 				newTarget.Properties.Position.y = parseF32(); advanceWord();
 				newTarget.Properties.Angle = parseF32(); advanceWord();

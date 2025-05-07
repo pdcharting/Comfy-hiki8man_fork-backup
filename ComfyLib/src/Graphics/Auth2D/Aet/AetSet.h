@@ -6,6 +6,7 @@
 #include "IO/Stream/FileInterfaces.h"
 #include <optional>
 #include <variant>
+#include <algorithm>
 
 namespace Comfy
 {

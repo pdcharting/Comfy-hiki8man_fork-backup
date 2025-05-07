@@ -14,6 +14,7 @@ namespace Comfy::Studio::Editor
 		Circle,
 		SlideL,
 		SlideR,
+		Star,
 		Count
 	};
 
@@ -27,6 +28,7 @@ namespace Comfy::Studio::Editor
 		ButtonTypeFlags_Circle = 1 << static_cast<u8>(ButtonType::Circle),
 		ButtonTypeFlags_SlideL = 1 << static_cast<u8>(ButtonType::SlideL),
 		ButtonTypeFlags_SlideR = 1 << static_cast<u8>(ButtonType::SlideR),
+		ButtonTypeFlags_Star = 1 << static_cast<u8>(ButtonType::Star),
 
 		ButtonTypeFlags_NormalAll = (ButtonTypeFlags_Triangle | ButtonTypeFlags_Square | ButtonTypeFlags_Cross | ButtonTypeFlags_Circle),
 		ButtonTypeFlags_SlideAll = (ButtonTypeFlags_SlideL | ButtonTypeFlags_SlideR),
@@ -60,10 +62,18 @@ namespace Comfy::Studio::Editor
 		TargetPropertyFlags_All = (TargetPropertyFlags_PositionXY | TargetPropertyFlags_Angle | TargetPropertyFlags_Frequency | TargetPropertyFlags_Amplitude | TargetPropertyFlags_Distance),
 	};
 
+	constexpr bool IsNormalButtonType(ButtonType type)
+	{
+		return (type == ButtonType::Triangle || type == ButtonType::Circle ||
+			type == ButtonType::Cross || type == ButtonType::Square);
+	}
+
 	constexpr bool IsSlideButtonType(ButtonType type)
 	{
 		return (type == ButtonType::SlideL || type == ButtonType::SlideR);
 	}
+
+	constexpr bool IsStarButtonType(ButtonType type) { return type == ButtonType::Star; }
 
 	constexpr ButtonType FlipSlideButtonType(ButtonType type)
 	{
@@ -140,7 +150,10 @@ namespace Comfy::Studio::Editor
 		u16 SameTypeSyncIndex : 4;
 		u16 SameTypeSyncCount : 4;
 
-		u16 /* Reserved */ : 8;
+		// NOTE: Publicly set flags:
+		u16 IsDouble : 1;
+		u16 IsLong : 1;
+		u16 /* Reserved */ : 6;
 	};
 
 	static_assert(sizeof(TargetFlags) == sizeof(u32));
@@ -159,9 +172,18 @@ namespace Comfy::Studio::Editor
 		TargetFlags Flags = {};
 		TargetProperties Properties = {};
 		TimelineTargetID ID = {};
+		// NOTE: ID of the associated long end note or the next link note piece.
+		TimelineTargetID NextID = {};
+		// NOTE: ID of the associated long start note or the previous link note piece.
+		TimelineTargetID PreviousID = {};
+		// NOTE: ID of this target, used to resolve references when re-importing a chart file.
+		TimelineTargetID ReferenceID = {};
+
+		bool IsLongStart() const;
+		bool IsLongEnd() const;
 	};
 
-	static_assert(sizeof(TimelineTarget) == 40);
+	static_assert(sizeof(TimelineTarget) == 52);
 
 	class SortedTargetList : NonCopyable
 	{
@@ -182,6 +204,11 @@ namespace Comfy::Studio::Editor
 		i32 FindIndex(BeatTick tick) const;
 		i32 FindIndex(BeatTick tick, ButtonType type) const;
 		i32 FindIndex(TimelineTargetID id) const;
+		TimelineTarget* Find(TimelineTargetID id);
+		TimelineTarget* FindWithReferenceID(TimelineTargetID refID);
+		TimelineTarget* FindNextOrPrevious(const TimelineTarget& target);
+
+		Comfy::Studio::Editor::BeatTick GetLengthInTicks(const TimelineTarget& target) const;
 
 		void Clear();
 
@@ -213,6 +240,8 @@ namespace Comfy::Studio::Editor
 
 		void UpdateTargetInternalFlagsAround(i32 index);
 		void UpdateTargetInternalFlagsInRange(i32 startIndex = -1, i32 endIndex = -1);
+		TimelineTargetID FindNewTargetID(TimelineTargetID referenceID);
+		void ResolveNewTargetReferenceIDs();
 
 		i32 FloorIndexToSyncPairStart(i32 index) const;
 		i32 CeilIndexToSyncPairEnd(i32 index) const;

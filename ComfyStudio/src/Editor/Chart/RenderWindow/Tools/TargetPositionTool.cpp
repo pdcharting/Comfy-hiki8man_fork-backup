@@ -724,8 +724,20 @@ namespace Comfy::Studio::Editor
 				const auto tickDistance = (thisTarget.Tick - prevTarget.Tick);
 				const bool slideHeadsTouch = doSlideHeadsTouch(thisTarget, prevTarget, cardinal);
 
-				targetData[i].ID = thisTarget.ID;
-				targetData[i].NewValue.Position = getNextPos(targetData[i - 1].NewValue.Position, Rules::TryGetProperties(thisTarget).Position, tickDistance, prevTarget.Flags.IsChain, prevTarget.Flags.IsChainEnd, slideHeadsTouch);
+				if (thisTarget.IsLongEnd())
+				{
+					targetData[i].ID = thisTarget.ID;
+					if (thisTarget.PreviousID != TimelineTargetID::Null)
+					{
+						if (i32 nextIndex = chart.Targets.FindIndex(thisTarget.PreviousID); nextIndex != -1)
+							targetData[i].NewValue.Position = chart.Targets[nextIndex].Properties.Position;
+					}
+				}
+				else
+				{
+					targetData[i].ID = thisTarget.ID;
+					targetData[i].NewValue.Position = getNextPos(targetData[i - 1].NewValue.Position, Rules::TryGetProperties(thisTarget).Position, tickDistance, prevTarget.Flags.IsChain, prevTarget.Flags.IsChainEnd, slideHeadsTouch);
+				}
 			}
 		}
 

@@ -199,12 +199,14 @@ namespace Comfy::Studio
 			Input::MultiBinding TargetTimeline_SetPlaybackSpeed_25Percent;
 			Input::MultiBinding TargetTimeline_ToggleMetronome;
 			Input::MultiBinding TargetTimeline_ToggleTargetHolds;
+			Input::MultiBinding TargetTimeline_ToggleTargetDoubles;
 			Input::MultiBinding TargetTimeline_PlaceTriangle;
 			Input::MultiBinding TargetTimeline_PlaceSquare;
 			Input::MultiBinding TargetTimeline_PlaceCross;
 			Input::MultiBinding TargetTimeline_PlaceCircle;
 			Input::MultiBinding TargetTimeline_PlaceSlideL;
 			Input::MultiBinding TargetTimeline_PlaceSlideR;
+			Input::MultiBinding TargetTimeline_PlaceStar;
 			Input::MultiBinding TargetTimeline_ModifyTargetsMirrorTypes;
 			Input::MultiBinding TargetTimeline_ModifyTargetsExpandTime2To1;
 			Input::MultiBinding TargetTimeline_ModifyTargetsExpandTime3To2;

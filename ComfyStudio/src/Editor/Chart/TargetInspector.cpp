@@ -237,6 +237,13 @@ namespace Comfy::Studio::Editor
 			PropertyGui(chart, "Amplitude", TargetPropertyType_Amplitude);
 			PropertyGui(chart, "Distance", TargetPropertyType_Distance);
 
+#if COMFY_DEBUG
+			if (frontSelectedTarget != nullptr)
+			{
+				Gui::Text("Target ID  : %4d\nPrevious ID: %4d\nNext ID    : %4d\n", frontSelectedTarget->ID, frontSelectedTarget->PreviousID, frontSelectedTarget->NextID);
+			}
+#endif
+
 			if (frontSelectedTarget == nullptr)
 				Gui::PopItemFlag();
 		});

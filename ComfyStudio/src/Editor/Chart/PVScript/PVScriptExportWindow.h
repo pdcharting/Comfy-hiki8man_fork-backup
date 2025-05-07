@@ -90,6 +90,22 @@ namespace Comfy::Studio::Editor
 		}
 	};
 
+	struct NCExtraInfo
+	{
+		i32 Index;
+		i32 SubIndex;
+		f32 Length;
+		bool IsEnd;
+	};
+
+	enum class ScriptConversionMode
+	{
+		Normal = 0,
+		F,
+		NC,
+		Count
+	};
+
 	using PVExportTasks = std::vector<std::future<void>>;
 
 	class PVScriptExportWindow : NonCopyable
@@ -105,7 +121,7 @@ namespace Comfy::Studio::Editor
 		void OnWindowOpen();
 		void OnCloseButtonClicked();
 
-		void ConvertAndSaveSimpleScriptSync(std::string_view outputScriptPath, const Chart& chart) const;
+		void ConvertAndSaveSimpleScriptSync(std::string_view outputScriptPath, const Chart& chart, ScriptConversionMode mode) const;
 
 	private:
 		void StartAsyncExport(PVExportWindowInputData inData);

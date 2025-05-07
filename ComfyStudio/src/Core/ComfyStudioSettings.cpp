@@ -783,12 +783,14 @@ namespace Comfy::Studio
 			func(userData.Input.TargetTimeline_SetPlaybackSpeed_25Percent, "target_timeline_set_playback_speed_25_percent");
 			func(userData.Input.TargetTimeline_ToggleMetronome, "target_timeline_toggle_metronome");
 			func(userData.Input.TargetTimeline_ToggleTargetHolds, "target_timeline_toggle_target_holds");
+			func(userData.Input.TargetTimeline_ToggleTargetDoubles, "target_timeline_toggle_target_doubles");
 			func(userData.Input.TargetTimeline_PlaceTriangle, "target_timeline_place_triangle");
 			func(userData.Input.TargetTimeline_PlaceSquare, "target_timeline_place_square");
 			func(userData.Input.TargetTimeline_PlaceCross, "target_timeline_place_cross");
 			func(userData.Input.TargetTimeline_PlaceCircle, "target_timeline_place_circle");
 			func(userData.Input.TargetTimeline_PlaceSlideL, "target_timeline_place_slide_l");
 			func(userData.Input.TargetTimeline_PlaceSlideR, "target_timeline_place_slide_r");
+			func(userData.Input.TargetTimeline_PlaceStar, "target_timeline_place_star");
 			func(userData.Input.TargetTimeline_ModifyTargetsMirrorTypes, "target_timeline_modify_targets_mirror_types");
 			func(userData.Input.TargetTimeline_ModifyTargetsExpandTime2To1, "target_timeline_modify_targets_expand_time_2_to_1");
 			func(userData.Input.TargetTimeline_ModifyTargetsExpandTime3To2, "target_timeline_modify_targets_expand_time_3_to_2");
@@ -841,7 +843,7 @@ namespace Comfy::Studio
 			func(userData.Input.Playtest_MoveResetPointBackward, "playtest_move_reset_point_backward");
 			func(userData.Input.Playtest_MoveResetPointForward, "playtest_move_reset_point_forward");
 
-			constexpr size_t bindingsHandledInsideThisFunction = 120;
+			constexpr size_t bindingsHandledInsideThisFunction = 122;
 			constexpr size_t totalBindingsCountInsideUserDataHeader = (sizeof(userData.Input) - sizeof(userData.Input.ControllerLayoutMappings) - sizeof(userData.Input.PlaytestBindings)) / sizeof(Input::MultiBinding);
 			static_assert(totalBindingsCountInsideUserDataHeader == bindingsHandledInsideThisFunction);
 		}
@@ -855,6 +857,7 @@ namespace Comfy::Studio
 			{ ButtonType::Circle, "circle", },
 			{ ButtonType::SlideL, "slide_l", },
 			{ ButtonType::SlideR, "slide_r", },
+			{ ButtonType::Star, "star" }
 		};
 		static_assert(Json::CompileTimeValidateEnumNameMappingTable(ButtonTypeEnumNames));
 
@@ -1917,12 +1920,14 @@ namespace Comfy::Studio
 			Input.TargetTimeline_SetChainSlideGridDivision_64 = MultiBinding();
 			Input.TargetTimeline_ToggleMetronome = MultiBinding(Binding(KeyCode_M));
 			Input.TargetTimeline_ToggleTargetHolds = MultiBinding(Binding(KeyCode_F));
+			Input.TargetTimeline_ToggleTargetDoubles = MultiBinding(Binding(KeyCode_B));
 			Input.TargetTimeline_PlaceTriangle = MultiBinding(Binding(KeyCode_W), Binding(KeyCode_I));
 			Input.TargetTimeline_PlaceSquare = MultiBinding(Binding(KeyCode_A), Binding(KeyCode_J));
 			Input.TargetTimeline_PlaceCross = MultiBinding(Binding(KeyCode_S), Binding(KeyCode_K));
 			Input.TargetTimeline_PlaceCircle = MultiBinding(Binding(KeyCode_D), Binding(KeyCode_L));
 			Input.TargetTimeline_PlaceSlideL = MultiBinding(Binding(KeyCode_Q), Binding(KeyCode_U));
 			Input.TargetTimeline_PlaceSlideR = MultiBinding(Binding(KeyCode_E), Binding(KeyCode_O));
+			Input.TargetTimeline_PlaceStar = MultiBinding(Binding(KeyCode_R), Binding(KeyCode_Y));
 
 			Input.TargetPreview_JumpToPreviousTarget = MultiBinding(Binding(KeyCode_Q));
 			Input.TargetPreview_JumpToNextTarget = MultiBinding(Binding(KeyCode_E));

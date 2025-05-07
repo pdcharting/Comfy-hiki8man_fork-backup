@@ -11,6 +11,7 @@ namespace Comfy::Studio::Editor
 	public:
 		void OnEditorSpritesLoaded(const Graphics::SprSet* sprSet);
 		void DrawButtonIcon(ImDrawList* drawList, const TimelineTarget& target, vec2 position, f32 scale, f32 transparency = 1.0f) const;
+		void DrawTargetLine(ImDrawList* drawList, ButtonType type, vec2 startPos, vec2 endPos, f32 scale, f32 opacity) const;
 
 	private:
 		const Graphics::Spr* GetButtonSpriteForTarget(const TimelineTarget& target) const;
@@ -27,13 +28,18 @@ namespace Comfy::Studio::Editor
 		{
 			std::array<const Graphics::Spr*, EnumCount<ButtonType>()>
 				ButtonIcons,
+				ButtonIconsChance,
 				ButtonIconsSync,
 				ButtonIconsFrag,
-				ButtonIconsFragSync;
+				ButtonIconsFragSync,
+				ButtonIconsDouble,
+				ButtonIconsLong;
 
 			const Graphics::Spr
 				*HoldText,
 				*HoldTextSync;
+
+			const Graphics::Spr *TargetLine, *TargetLineYellow;
 		} sprites = {};
 	};
 }

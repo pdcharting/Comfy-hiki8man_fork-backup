@@ -433,6 +433,7 @@ namespace Comfy::Studio::Editor
 		std::vector<InterpolateTargetListAngles::Data> targetData;
 		targetData.reserve(selectionCount);
 
+		std::unordered_map<TimelineTargetID, f32> copiedAngles;
 		for (const auto& target : chart.Targets)
 		{
 			if (!target.IsSelected)
@@ -442,6 +443,19 @@ namespace Comfy::Studio::Editor
 			auto& data = targetData.emplace_back();
 			data.ID = target.ID;
 			data.NewValue.Angle = Rules::NormalizeAngle(((1.0f - t) * startAngle) + (t * endAngle));
+
+			if (auto it = copiedAngles.find(target.ID); it != copiedAngles.end())
+			{
+				data.NewValue.Angle = it->second;
+				continue;
+			}
+
+			if (target.Flags.IsLong)
+			{
+				TimelineTarget* nextOrPrev = chart.Targets.FindNextOrPrevious(target);
+				if (nextOrPrev != nullptr)
+					copiedAngles[nextOrPrev->ID] = data.NewValue.Angle;
+			}
 		}
 
 		undoManager.DisallowMergeForLastCommand();
@@ -510,26 +524,30 @@ namespace Comfy::Studio::Editor
 			auto prevDataIt = beginIt;
 			auto thisDataIt = beginIt + 1;
 
-			if (angleIncrement.UseFixedStepIncrement)
+			std::unordered_map<TimelineTargetID, f32> copiedAngles;
+			// NOTE: Push the first selected note's angle to the angles map if it's a long start,
+			//       otherwise the end note would be affected
+			if (beginIt != endIt)
 			{
-				while (thisDataIt != endIt)
+				const TimelineTarget& target = chart.Targets[chart.Targets.FindIndex(beginIt->ID)];
+				if (target.IsLongStart() && target.NextID != TimelineTargetID::Null)
+					copiedAngles[target.NextID] = beginIt->NewValue.Angle;
+			}
+
+			while (thisDataIt != endIt)
+			{
+				const TimelineTarget& thisTarget = chart.Targets[chart.Targets.FindIndex(thisDataIt->ID)];
+
+				if (angleIncrement.UseFixedStepIncrement)
 				{
-					const auto& thisTarget = chart.Targets[chart.Targets.FindIndex(thisDataIt->ID)];
 					const f32 finalIncrement = (!angleIncrement.ApplyToChainSlides && thisTarget.Flags.IsChain && !thisTarget.Flags.IsChainStart) ?
 						0.0f : (-angleIncrement.FixedStepIncrementPerTarget * direction);
 
 					thisDataIt->NewValue.Angle = Rules::NormalizeAngle(prevDataIt->NewValue.Angle + finalIncrement);
-
-					prevDataIt++;
-					thisDataIt++;
 				}
-			}
-			else
-			{
-				while (thisDataIt != endIt)
+				else
 				{
 					const auto& prevTarget = chart.Targets[chart.Targets.FindIndex(prevDataIt->ID)];
-					const auto& thisTarget = chart.Targets[chart.Targets.FindIndex(thisDataIt->ID)];
 
 					const auto tickDifference = (prevTarget.Tick - thisTarget.Tick);
 
@@ -542,10 +560,22 @@ namespace Comfy::Studio::Editor
 						0.0f : (tickDifference.BeatsFraction() * incrementPerBeat * direction);
 
 					thisDataIt->NewValue.Angle = Rules::NormalizeAngle(prevDataIt->NewValue.Angle + finalIncrement);
-
-					prevDataIt++;
-					thisDataIt++;
 				}
+
+				if (thisTarget.Flags.IsLong)
+				{
+					if (auto it = copiedAngles.find(thisTarget.ID); it != copiedAngles.end())
+						thisDataIt->NewValue.Angle = it->second;
+					else
+					{
+						TimelineTarget* nextOrPrev = chart.Targets.FindNextOrPrevious(thisTarget);
+						if (nextOrPrev != nullptr)
+							copiedAngles[nextOrPrev->ID] = thisDataIt->NewValue.Angle;
+					}
+				}
+
+				prevDataIt++;
+				thisDataIt++;
 			}
 		};
 

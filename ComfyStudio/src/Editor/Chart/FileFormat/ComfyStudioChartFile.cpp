@@ -12,7 +12,7 @@ namespace Comfy::Studio::Editor
 	namespace ChartFileFormat
 	{
 		// NOTE: Increment major version for breaking changes and minor version for backwards and forward compatible additions
-		enum class Version : u16 { CurrentMajor = 1, CurrentMinor = 8, };
+		enum class Version : u16 { CurrentMajor = 2, CurrentMinor = 0, };
 		enum class Endianness : u16 { Little = 'L', Big = 'B' };
 		enum class PointerSize : u16 { Bit32 = 32, Bit64 = 64 };
 		enum class HeaderFlags : u32 { None = 0xFFFFFFFF };
@@ -100,19 +100,25 @@ namespace Comfy::Studio::Editor
 			void(*WriteFunc)(IO::StreamWriter&, const TimelineTarget&);
 		};
 
-		constexpr std::array<TargetField, 11> TargetFields =
+		constexpr std::array<TargetField, 17> TargetFields =
 		{
 			TargetField { "Tick", sizeof(i32), [](IO::StreamReader& r, TimelineTarget& t) { t.Tick = BeatTick(r.ReadI32()); }, [](IO::StreamWriter& writer, const TimelineTarget& target) { writer.WriteI32(target.Tick.Ticks()); } },
+			TargetField { "EndTick", sizeof(i32), [](IO::StreamReader& r, TimelineTarget& t) { r.ReadI32(); }, [](IO::StreamWriter& writer, const TimelineTarget& target) { writer.WriteI32(-1); } },
 			TargetField { "Type", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Type = static_cast<ButtonType>(r.ReadU8()); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(static_cast<u8>(t.Type)); } },
 			TargetField { "Properties", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Flags.HasProperties = r.ReadU8(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(t.Flags.HasProperties); } },
 			TargetField { "Hold", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Flags.IsHold = r.ReadU8(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(t.Flags.IsHold); } },
 			TargetField { "Chain", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Flags.IsChain = r.ReadU8(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(t.Flags.IsChain); } },
 			TargetField { "Chance", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Flags.IsChance = r.ReadU8(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(t.Flags.IsChance); } },
+			TargetField { "Double", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Flags.IsDouble = r.ReadU8(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(t.Flags.IsDouble); } },
+			TargetField { "Long", sizeof(u8), [](IO::StreamReader& r, TimelineTarget& t) { t.Flags.IsLong = r.ReadU8(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteU8(t.Flags.IsLong); } },
 			TargetField { "Position", sizeof(vec2), [](IO::StreamReader& r, TimelineTarget& t) { t.Properties.Position = r.ReadV2(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteF32(t.Properties.Position.x); w.WriteF32(t.Properties.Position.y); } },
 			TargetField { "Angle", sizeof(f32), [](IO::StreamReader& r, TimelineTarget& t) { t.Properties.Angle = r.ReadF32(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteF32(t.Properties.Angle); } },
 			TargetField { "Frequency", sizeof(f32), [](IO::StreamReader& r, TimelineTarget& t) { t.Properties.Frequency = r.ReadF32(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteF32(t.Properties.Frequency); } },
 			TargetField { "Amplitude", sizeof(f32), [](IO::StreamReader& r, TimelineTarget& t) { t.Properties.Amplitude = r.ReadF32(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteF32(t.Properties.Amplitude); } },
 			TargetField { "Distance", sizeof(f32), [](IO::StreamReader& r, TimelineTarget& t) { t.Properties.Distance = r.ReadF32(); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteF32(t.Properties.Distance); } },
+			TargetField { "NextID", sizeof(i32), [](IO::StreamReader& r, TimelineTarget& t) { t.NextID = static_cast<TimelineTargetID>(r.ReadI32()); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteI32(static_cast<i32>(t.NextID)); } },
+			TargetField { "PreviousID", sizeof(i32), [](IO::StreamReader& r, TimelineTarget& t) { t.PreviousID = static_cast<TimelineTargetID>(r.ReadI32()); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteI32(static_cast<i32>(t.PreviousID)); } },
+			TargetField { "ReferenceID", sizeof(i32), [](IO::StreamReader& r, TimelineTarget& t) { t.ReferenceID = static_cast<TimelineTargetID>(r.ReadI32()); }, [](IO::StreamWriter& w, const TimelineTarget& t) { w.WriteI32(static_cast<i32>(t.ID)); } }
 		};
 
 		struct TempoField
@@ -877,7 +883,9 @@ namespace Comfy::Studio::Editor
 		chart.Scale.ButtonTypeNames.emplace_back("SlideL");
 		static_assert(static_cast<u8>(ButtonType::SlideR) == 5);
 		chart.Scale.ButtonTypeNames.emplace_back("SlideR");
-		static_assert(static_cast<u8>(EnumCount<ButtonType>()) == 6);
+		static_assert(static_cast<u8>(ButtonType::Star) == 6);
+		chart.Scale.ButtonTypeNames.emplace_back("Star");
+		static_assert(static_cast<u8>(EnumCount<ButtonType>()) == 7);
 
 		chart.Scale.TicksPerBeat = BeatTick::TicksPerBeat;
 		chart.Scale.PlacementAreaSize = Rules::PlacementAreaSize;

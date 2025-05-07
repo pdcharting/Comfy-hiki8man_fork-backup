@@ -160,7 +160,9 @@ namespace Comfy::Studio::Editor
 
 		void DrawRangeSelection();
 
+		bool CalculateTargetDrawParam(const TimelineTarget& target, vec2* pCenter, f32* pScale, f32* pOpacity);
 		void DrawTimelineTargets();
+		void DrawTimelineRangedPlacement();
 		f32 GetTimelineTargetScaleFactor(const TimelineTarget& target, TimeSpan buttonTime) const;
 
 		void DrawTimelineCursor() override;
@@ -177,6 +179,7 @@ namespace Comfy::Studio::Editor
 		void UpdateInputCursorClick();
 		void UpdateInputCursorScrubbing();
 		void UpdateInputTargetPlacement();
+		bool UpdateInputRangedPlacement();
 		void UpdateInputContextMenu();
 		void UpdateInputBoxSelection();
 
@@ -184,6 +187,7 @@ namespace Comfy::Studio::Editor
 		size_t CountSelectedTargets() const;
 
 		void ToggleSelectedTargetsHolds(Undo::UndoManager& undoManager, Chart& chart);
+		void ToggleSelectedTargetsDoubles(Undo::UndoManager& undoManager, Chart& chart);
 
 		void SelectAllTargets(Chart& chart);
 		void DeselectAllTargets(Chart& chart);
@@ -200,7 +204,8 @@ namespace Comfy::Studio::Editor
 		BeatTick GetTargetPlacementCursorTickWithAdjustedOffsetSetting() const;
 
 		void FillInRangeSelectionTargets(Undo::UndoManager& undoManager, Chart& chart, ButtonType type);
-		void PlaceOrRemoveTarget(Undo::UndoManager& undoManager, Chart& chart, BeatTick tick, ButtonType type);
+		TimelineTarget* PlaceOrRemoveTarget(Undo::UndoManager& undoManager, Chart& chart, BeatTick tick, ButtonType type);
+		void PlaceSustainTarget(Undo::UndoManager& undoManager, Chart& chart, BeatTick startTick, BeatTick endTick, ButtonType type);
 
 		void RemoveAllSelectedTargets(Undo::UndoManager& undoManager, Chart& chart, std::optional<size_t> preCalculatedSelectionCount = {});
 
@@ -353,5 +358,11 @@ namespace Comfy::Studio::Editor
 
 		struct ButtonAnimationData { BeatTick Tick; TimeSpan ElapsedTime; };
 		std::array<ButtonAnimationData, EnumCount<ButtonType>()> buttonAnimations = {};
+
+	private:
+
+		bool isPlacingRangedNote = false;
+		ButtonType placingButtonType = ButtonType::Count;
+		BeatTick placingButtonStartTick = BeatTick::Zero();
 	};
 }

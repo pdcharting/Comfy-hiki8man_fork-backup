@@ -258,6 +258,25 @@ namespace Comfy::Studio::Editor
 		return nullptr;
 	}
 
+	f32 SortedTempoMap::FindFlyingTimeFactorAt(BeatTick tick) const
+	{
+		if (tempoChanges.size() < 1)
+			return 1.0f;
+
+		f32 factor = 1.0f;
+		if (tempoChanges[0].FlyingTime.has_value())
+			factor = tempoChanges[0].FlyingTime.value().Factor;
+		
+		for (auto& tempoChange : tempoChanges)
+		{
+			if (tick >= tempoChange.Tick)
+				if (tempoChange.FlyingTime.has_value())
+					factor = tempoChange.FlyingTime.value().Factor;
+		}
+
+		return factor;
+	}
+
 	size_t SortedTempoMap::Count() const
 	{
 		return tempoChanges.size();
