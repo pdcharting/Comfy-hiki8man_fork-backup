@@ -784,6 +784,7 @@ namespace Comfy::Studio
 			func(userData.Input.TargetTimeline_ToggleMetronome, "target_timeline_toggle_metronome");
 			func(userData.Input.TargetTimeline_ToggleTargetHolds, "target_timeline_toggle_target_holds");
 			func(userData.Input.TargetTimeline_ToggleTargetDoubles, "target_timeline_toggle_target_doubles");
+			func(userData.Input.TargetTimeline_ToggleTargetDoubles, "target_timeline_toggle_target_chance");
 			func(userData.Input.TargetTimeline_PlaceTriangle, "target_timeline_place_triangle");
 			func(userData.Input.TargetTimeline_PlaceSquare, "target_timeline_place_square");
 			func(userData.Input.TargetTimeline_PlaceCross, "target_timeline_place_cross");
@@ -843,7 +844,7 @@ namespace Comfy::Studio
 			func(userData.Input.Playtest_MoveResetPointBackward, "playtest_move_reset_point_backward");
 			func(userData.Input.Playtest_MoveResetPointForward, "playtest_move_reset_point_forward");
 
-			constexpr size_t bindingsHandledInsideThisFunction = 122;
+			constexpr size_t bindingsHandledInsideThisFunction = 123;
 			constexpr size_t totalBindingsCountInsideUserDataHeader = (sizeof(userData.Input) - sizeof(userData.Input.ControllerLayoutMappings) - sizeof(userData.Input.PlaytestBindings)) / sizeof(Input::MultiBinding);
 			static_assert(totalBindingsCountInsideUserDataHeader == bindingsHandledInsideThisFunction);
 		}
@@ -1921,6 +1922,7 @@ namespace Comfy::Studio
 			Input.TargetTimeline_ToggleMetronome = MultiBinding(Binding(KeyCode_M));
 			Input.TargetTimeline_ToggleTargetHolds = MultiBinding(Binding(KeyCode_F));
 			Input.TargetTimeline_ToggleTargetDoubles = MultiBinding(Binding(KeyCode_B));
+			Input.TargetTimeline_ToggleTargetChance = MultiBinding();
 			Input.TargetTimeline_PlaceTriangle = MultiBinding(Binding(KeyCode_W), Binding(KeyCode_I));
 			Input.TargetTimeline_PlaceSquare = MultiBinding(Binding(KeyCode_A), Binding(KeyCode_J));
 			Input.TargetTimeline_PlaceCross = MultiBinding(Binding(KeyCode_S), Binding(KeyCode_K));

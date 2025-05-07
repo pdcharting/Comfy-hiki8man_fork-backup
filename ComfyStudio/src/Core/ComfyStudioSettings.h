@@ -200,6 +200,7 @@ namespace Comfy::Studio
 			Input::MultiBinding TargetTimeline_ToggleMetronome;
 			Input::MultiBinding TargetTimeline_ToggleTargetHolds;
 			Input::MultiBinding TargetTimeline_ToggleTargetDoubles;
+			Input::MultiBinding TargetTimeline_ToggleTargetChance;
 			Input::MultiBinding TargetTimeline_PlaceTriangle;
 			Input::MultiBinding TargetTimeline_PlaceSquare;
 			Input::MultiBinding TargetTimeline_PlaceCross;
