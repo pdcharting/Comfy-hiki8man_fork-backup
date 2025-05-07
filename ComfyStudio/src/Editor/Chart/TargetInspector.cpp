@@ -217,6 +217,28 @@ namespace Comfy::Studio::Editor
 					undoManager.Execute<ChangeTargetListIsHold>(chart, std::move(targetData));
 			});
 
+			// Add change success note support
+			auto isChanceValueGetter = [](auto& t) { return static_cast<GuiProperty::Boolean>(t.Flags.IsChance); };
+			auto isChanceConditionGetter = [](auto& t) { return !t.Flags.IsChain && !t.Flags.IsHold && !t.Flags.IsDouble && !t.Flags.IsLong; };
+			BooleanGui("Is Chance", isChanceValueGetter, [](auto& t) { return true; }, [&](const bool newValue)
+				{
+					std::vector<ChangeTargetListIsChance::Data> targetData;
+					targetData.reserve(selectedTargets.size());
+
+					for (const auto& targetView : selectedTargets)
+					{
+						if (!isChanceConditionGetter(*targetView))
+							continue;
+
+						auto& data = targetData.emplace_back();
+						data.ID = targetView.Target->ID;
+						data.NewValue = newValue;
+					}
+
+					if (!targetData.empty())
+						undoManager.Execute<ChangeTargetListIsChance>(chart, std::move(targetData));
+				});
+
 			auto usePresetValueGetter = [](auto& t) { return static_cast<GuiProperty::Boolean>(!t.Flags.HasProperties); };
 			BooleanGui("Use Preset", usePresetValueGetter, [](auto& t) { return true; }, [&](const bool newValue)
 			{
