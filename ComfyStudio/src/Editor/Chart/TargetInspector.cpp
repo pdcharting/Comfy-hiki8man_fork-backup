@@ -232,7 +232,7 @@ namespace Comfy::Studio::Editor
 			// Add change success note support
 			auto isChanceValueGetter = [](auto& t) { return static_cast<GuiProperty::Boolean>(t.Flags.IsChance); };
 			auto isChanceConditionGetter = [](auto& t) { return !t.Flags.IsChain && !t.Flags.IsHold; };
-			BooleanGui("Is Chance", isChanceValueGetter, [](auto& t) { return true; }, [&](const bool newValue)
+			BooleanGui("Is Chance", isChanceValueGetter, isChanceConditionGetter, [&](const bool newValue)
 				{
 					std::vector<ChangeTargetListIsChance::Data> targetData;
 					targetData.reserve(selectedTargets.size());
