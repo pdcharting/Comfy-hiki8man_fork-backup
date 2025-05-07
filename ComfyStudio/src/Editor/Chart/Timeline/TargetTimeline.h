@@ -188,6 +188,7 @@ namespace Comfy::Studio::Editor
 
 		void ToggleSelectedTargetsHolds(Undo::UndoManager& undoManager, Chart& chart);
 		void ToggleSelectedTargetsDoubles(Undo::UndoManager& undoManager, Chart& chart);
+		void ToggleSelectedTargetsChance(Undo::UndoManager& undoManager, Chart& chart);
 
 		void SelectAllTargets(Chart& chart);
 		void DeselectAllTargets(Chart& chart);

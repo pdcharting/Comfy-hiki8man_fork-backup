@@ -1492,6 +1492,9 @@ namespace Comfy::Studio::Editor
 
 		if (Input::IsAnyPressed(GlobalUserData.Input.TargetTimeline_ToggleTargetDoubles, false))
 			ToggleSelectedTargetsDoubles(undoManager, *workingChart);
+
+		if (Input::IsAnyPressed(GlobalUserData.Input.TargetTimeline_ToggleTargetChance, false))
+			ToggleSelectedTargetsChance(undoManager, *workingChart);
 	}
 
 	namespace
@@ -1978,6 +1981,12 @@ namespace Comfy::Studio::Editor
 			if (Gui::MenuItem("Toggle Target Holds", Input::ToString(GlobalUserData.Input.TargetTimeline_ToggleTargetHolds).data(), nullptr, anyHoldToggableTargetSelected))
 				ToggleSelectedTargetsHolds(undoManager, *workingChart);
 
+			auto isTargetSelectedAndChanceToggable = [](const TimelineTarget& t) -> bool { return t.IsSelected && !t.Flags.IsChain; };
+			const bool anyChanceToggableTargetSelected = (selectionCount > 0) && std::any_of(workingChart->Targets.begin(), workingChart->Targets.end(), isTargetSelectedAndChanceToggable);
+
+			if (Gui::MenuItem("Toggle Target Chance", Input::ToString(GlobalUserData.Input.TargetTimeline_ToggleTargetChance).data(), nullptr, anyChanceToggableTargetSelected))
+				ToggleSelectedTargetsChance(undoManager, *workingChart);
+
 			auto isSelectionConvertableToLong = [&]()
 			{
 				if (selectionCount % 2 != 0)
@@ -2213,7 +2222,7 @@ namespace Comfy::Studio::Editor
 		for (const auto& target : workingChart->Targets)
 		{
 			// TODO: Disable IsDouble and IsLong rather than just not doing anything
-			if (!target.IsSelected || !IsNormalButtonType(target.Type) || target.Flags.IsDouble || target.Flags.IsLong)
+			if (!target.IsSelected || !IsNormalButtonType(target.Type) || target.Flags.IsDouble || target.Flags.IsLong || target.Flags.IsChance)
 				continue;
 
 			auto& data = commandData.emplace_back();
@@ -2265,6 +2274,32 @@ namespace Comfy::Studio::Editor
 				target.Flags.IsChance = false;
 				target.Flags.IsHold = false;
 			}
+		}
+	}
+
+
+	void TargetTimeline::ToggleSelectedTargetsChance(Undo::UndoManager& undoManager, Chart& chart)
+	{
+		const size_t selectedTargetCount = CountSelectedTargets();
+		if (selectedTargetCount < 1)
+			return;
+
+		std::vector<ToggleTargetListIsChance::Data> commandData;
+		commandData.reserve(selectedTargetCount);
+
+		for (const auto& target : workingChart->Targets)
+		{
+			if (!target.IsSelected || target.Flags.IsChain || target.Flags.IsHold || target.Flags.IsDouble || target.Flags.IsLong)
+				continue;
+
+			auto& data = commandData.emplace_back();
+			data.ID = target.ID;
+			data.NewValue = !target.Flags.IsChance;
+		}
+
+		if (!commandData.empty())
+		{
+			undoManager.Execute<ToggleTargetListIsChance>(*workingChart, std::move(commandData));
 		}
 	}
 
