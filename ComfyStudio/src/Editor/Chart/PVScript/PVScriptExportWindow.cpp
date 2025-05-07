@@ -175,7 +175,8 @@ namespace Comfy::Studio::Editor
 			TimeSpan moviePlayCommandTime = Max(-movieOffset, TimeSpan::Zero());
 
 			// NOTE: In the case the song or movie is set to start before time 0, as that would require a negative time command which typically isn't supported
-			const TimeSpan targetTimeDelayToEnsurePositiveSongAndMovieStart = Max(Max(songOffset, movieOffset), TimeSpan::Zero());
+			// Fix songOffset calculate
+			const TimeSpan targetTimeDelayToEnsurePositiveSongAndMovieStart = Max(Max(songOffset, moviePlayCommandTime + songOffset), TimeSpan::Zero());
 			if (songOffset > TimeSpan::Zero() || movieOffset >= TimeSpan::Zero())
 			{
 				// TODO: Does this correctly handle all casess (?)
