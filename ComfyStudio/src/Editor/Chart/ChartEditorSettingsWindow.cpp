@@ -1950,7 +1950,7 @@ namespace Comfy::Studio::Editor
 								binding.ButtonTypes = buttonTypeFlags;
 
 							// NOTE: Only allow selecting either a single slide or any number of non slide buttons
-							if (IsSlideButtonType(buttonType) || buttonType == ButtonType::Star)
+							if (IsSlideButtonType(buttonType) || IsStarButtonType(buttonType))
 								binding.ButtonTypes = flagIsSet ? binding.ButtonTypes : buttonTypeFlags;
 							else
 								binding.ButtonTypes &= ButtonTypeFlags_NormalAll;
