@@ -1092,6 +1092,8 @@ namespace Comfy::Studio::Editor
 
 						if (IsSlideButtonType(target.Type))
 							sharedContext.ButtonSoundController->PlaySlideSound();
+						else if (target.Flags.IsChance)
+							sharedContext.ButtonSoundController->PlayChanceSound();
 						else
 							sharedContext.ButtonSoundController->PlayButtonSound();
 
