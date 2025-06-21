@@ -515,12 +515,15 @@ namespace Comfy::Studio::Editor
 				// pvDB.append(b, sprintf_s(b, "pv_%03d.field.%02d.stage=%s\n", param.OutPVID, 1, "STGTST007"));
 				pvDB.append(b, sprintf_s(b, "pv_%03d.field.%02d.spr_set_back=%s%03d\n", inParam.OutPVID, 1, "SPR_SEL_PV", inParam.OutPVID));
 				pvDB.append(b, sprintf_s(b, "pv_%03d.field.length=%d\n", inParam.OutPVID, 1));
+				pvDB.append(b, sprintf_s(b, "pv_%03d.hidden_timing=0.3\n", inParam.OutPVID));
+				pvDB.append(b, sprintf_s(b, "pv_%03d.high_speed_rate=4\n", inParam.OutPVID));
 				pvDB.append(b, sprintf_s(b, "pv_%03d.lyric.%03d=%s\n", inParam.OutPVID, 0, "DUMMY_LYRICS"));
 				pvDB.append(b, sprintf_s(b, "pv_%03d.motion.01=CMN_POSE_DEFAULT_T\n", inParam.OutPVID));
 
 				if (!inParam.OutMovie.empty())
 				{
 					pvDB.append(b, sprintf_s(b, "pv_%03d.movie_file_name=rom/", inParam.OutPVID)).append(IO::Path::GetFileName(inParam.OutMovie)).append("\n");
+					pvDB.append(b, sprintf_s(b, "pv_%03d.movie_pv_type=ONLY\n", inParam.OutPVID));
 					pvDB.append(b, sprintf_s(b, "pv_%03d.movie_surface=FRONT\n", inParam.OutPVID));
 				}
 
@@ -528,6 +531,7 @@ namespace Comfy::Studio::Editor
 				pvDB.append(b, sprintf_s(b, "pv_%03d.performer.0.pv_costume=1\n", inParam.OutPVID));
 				pvDB.append(b, sprintf_s(b, "pv_%03d.performer.0.type=VOCAL\n", inParam.OutPVID));
 				pvDB.append(b, sprintf_s(b, "pv_%03d.performer.num=1\n", inParam.OutPVID));
+				pvDB.append(b, sprintf_s(b, "pv_%03d.pvbranch_success_se_name=pvchange04\n", inParam.OutPVID));
 
 				if (inData.Chart->Properties.SongPreview.Duration <= TimeSpan::Zero()) pvDB.append("#");
 				pvDB.append(b, sprintf_s(b, "pv_%03d.sabi.play_time=%g\n", inParam.OutPVID, inData.Chart->Properties.SongPreview.Duration.TotalSeconds()));
@@ -545,6 +549,7 @@ namespace Comfy::Studio::Editor
 				pvDB.append(b, sprintf_s(b, "pv_%03d.songinfo.lyrics=%s\n", inParam.OutPVID, inData.Chart->Properties.Song.Lyricist.c_str()));
 				pvDB.append(b, sprintf_s(b, "pv_%03d.songinfo.music=%s\n", inParam.OutPVID, ""));
 				pvDB.append(b, sprintf_s(b, "pv_%03d.songinfo.pv_editor=%s\n", inParam.OutPVID, ""));
+				pvDB.append(b, sprintf_s(b, "pv_%03d.sudden_timing=0.6\n", inParam.OutPVID));
 				pvDB.append("# --- COMFY STUDIO EXPORT END ---\n");
 
 				outProgress.PVDB = 0.1f;
