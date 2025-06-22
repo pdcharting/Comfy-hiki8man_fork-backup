@@ -391,6 +391,7 @@ namespace Comfy::Studio::Editor
 					sliderTouchName = entry->SfxName;
 
 				const bool chartHasSlides = std::any_of(inData.Chart->Targets.begin(), inData.Chart->Targets.end(), [](auto& t) { return IsSlideButtonType(t.Type); });
+				const bool chartHasChance = std::any_of(inData.Chart->Targets.begin(), inData.Chart->Targets.end(), [](auto& t) { return t.Flags.IsChance; });
 
 				char b[512];
 				std::string pvDB;
@@ -435,6 +436,7 @@ namespace Comfy::Studio::Editor
 				pvDB.append(b, sprintf_s(b, "pv_%03d.performer.0.pv_costume=1\n", inParam.OutPVID));
 				pvDB.append(b, sprintf_s(b, "pv_%03d.performer.0.type=VOCAL\n", inParam.OutPVID));
 				pvDB.append(b, sprintf_s(b, "pv_%03d.performer.num=1\n", inParam.OutPVID));
+				if (chartHasChance) pvDB.append("#");
 				pvDB.append(b, sprintf_s(b, "pv_%03d.pvbranch_success_se_name=pvchange04\n", inParam.OutPVID));
 
 				if (inData.Chart->Properties.SongPreview.Duration <= TimeSpan::Zero()) pvDB.append("#");
