@@ -1108,12 +1108,12 @@ namespace Comfy::Studio::Editor
 						if (target.HasBeenHit || target.Flags.IsChain)
 							continue;
 
-						if (IsSlideButtonType(target.Type))
+						if (target.Flags.IsChance)
+							sharedContext.ButtonSoundController->PlayChanceSound();
+						else if (IsSlideButtonType(target.Type))
 							sharedContext.ButtonSoundController->PlaySlideSound();
 						else if (IsStarButtonType(target.Type))
 							sharedContext.ButtonSoundController->PlayStarSound();
-						else if (target.Flags.IsChance)
-							sharedContext.ButtonSoundController->PlayChanceSound();
 						else
 							sharedContext.ButtonSoundController->PlayButtonSound();
 
