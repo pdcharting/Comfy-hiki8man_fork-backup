@@ -1268,8 +1268,9 @@ namespace Comfy::Studio::Editor
 					const auto fineThreshold = IsSlideButtonType(nextTargetToHit->Type) ? HitThreshold::FineSlide : HitThreshold::Fine;
 
 					bool successfulHit = false;
-
-					if (matchingType && IsSlideButtonType(nextTargetToHit->Type))
+					if (nextTargetToHit->Flags.IsChance)
+						sharedContext.ButtonSoundController->PlayChanceSound();
+					else if (matchingType && IsSlideButtonType(nextTargetToHit->Type))
 					{
 						sharedContext.ButtonSoundController->PlaySlideSound();
 						lastSlideActionStopwatch.Restart();
