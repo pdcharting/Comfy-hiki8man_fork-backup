@@ -492,7 +492,7 @@ namespace Comfy::Studio::Editor
 			Count
 		};
 
-		static constexpr auto settingsClickBehavior = TargetTimelineInfoColumnClickBehavior::InsertHovered;
+		static constexpr auto settingsClickBehavior = TargetTimelineInfoColumnClickBehavior::None;
 
 		if (settingsClickBehavior != TargetTimelineInfoColumnClickBehavior::None)
 		{
