@@ -853,6 +853,12 @@ namespace Comfy::Studio::Editor
 		fileDialog.ParentWindowHandle = ComfyStudioApplication::GetGlobalWindowFocusHandle();
 
 		bool exportAsF = false;
+		bool exportAsNC = false;
+
+		auto& ncItem = fileDialog.CustomizeItems.emplace_back();
+		ncItem.Type = IO::Shell::Custom::ItemType::Checkbox;
+		ncItem.Label = "Export as NC script";
+		ncItem.Data.CheckboxChecked = &exportAsNC;
 
 		auto& item = fileDialog.CustomizeItems.emplace_back();
 		item.Type = IO::Shell::Custom::ItemType::Checkbox;
@@ -862,7 +868,7 @@ namespace Comfy::Studio::Editor
 		if (!fileDialog.OpenSave())
 			return false;
 
-		auto mode = exportAsF ? ScriptConversionMode::F : ScriptConversionMode::Normal;
+		auto mode = exportAsNC ? ScriptConversionMode::NC : exportAsF ? ScriptConversionMode::F : ScriptConversionMode::Normal;
 		pvScriptExportPopup.Window.ConvertAndSaveSimpleScriptSync(fileDialog.OutFilePath, *chart, mode);
 		return true;
 	}

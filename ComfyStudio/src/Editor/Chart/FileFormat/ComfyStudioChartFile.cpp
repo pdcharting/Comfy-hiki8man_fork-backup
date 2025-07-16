@@ -12,7 +12,7 @@ namespace Comfy::Studio::Editor
 	namespace ChartFileFormat
 	{
 		// NOTE: Increment major version for breaking changes and minor version for backwards and forward compatible additions
-		enum class Version : u16 { CurrentMajor = 2, CurrentMinor = 0, };
+		enum class Version : u16 { CurrentMajor = 2, CurrentMinor = 1, };
 		enum class Endianness : u16 { Little = 'L', Big = 'B' };
 		enum class PointerSize : u16 { Bit32 = 32, Bit64 = 64 };
 		enum class HeaderFlags : u32 { None = 0xFFFFFFFF };
@@ -87,6 +87,7 @@ namespace Comfy::Studio::Editor
 		constexpr std::string_view SectionIDChartSectionIDTimeSongPreviewDuration = "Song Preview Duration";
 		constexpr std::string_view SectionIDChartSectionIDTargets = "Targets";
 		constexpr std::string_view SectionIDChartSectionIDTempoMap = "Tempo Map";
+		constexpr std::string_view SectionIDChartSectionIDEvents = "Events";
 		constexpr std::string_view SectionIDChartSectionIDButtonSounds = "Button Sounds";
 		constexpr std::string_view SectionIDChartSectionIDDifficulty = "Difficulty";
 
@@ -233,6 +234,7 @@ namespace Comfy::Studio::Editor
 
 		outChart->Targets = std::move(chart.Targets);
 		outChart->TempoMap = std::move(chart.TempoChanges);
+		outChart->Events = std::move(chart.Events);
 
 		outChart->Properties.ButtonSound.ButtonID = chart.ButtonSound.ButtonID;
 		outChart->Properties.ButtonSound.SlideID = chart.ButtonSound.SlideID;
@@ -525,6 +527,27 @@ namespace Comfy::Studio::Editor
 										reader.ReadU64();
 										reader.ReadU64();
 									}
+									else if (chartSectionNameID == SectionIDChartSectionIDEvents)
+									{
+										size_t eventCount = reader.ReadSize();
+										reader.ReadI32();
+										reader.ReadI32();
+
+										chart.Events.reserve(eventCount);
+										for (size_t eventIndex = 0; eventIndex < eventCount; eventIndex++)
+										{
+											TimedEvent& ev = chart.Events.emplace_back();
+											ev.ID = 0;
+											ev.StartTick = BeatTick::FromTicks(reader.ReadI32());
+											ev.EndTick = BeatTick::FromTicks(reader.ReadI32());
+											ev.Kind = static_cast<EventKind>(reader.ReadI32());
+											reader.ReadI32();
+											reader.ReadI32();
+											reader.ReadI32();
+											reader.ReadI32();
+											reader.ReadI32();
+										}
+									}
 								});
 							}
 						});
@@ -598,7 +621,7 @@ namespace Comfy::Studio::Editor
 					writer.WriteStrPtr(SectionIDChart);
 					writer.WriteFuncPtr([&](IO::StreamWriter& writer)
 					{
-						static constexpr auto chartSectionCount = 6;
+						static constexpr auto chartSectionCount = 7;
 						writer.WriteSize(chartSectionCount);
 						writer.WriteFuncPtr([&](IO::StreamWriter& writer)
 						{
@@ -784,6 +807,30 @@ namespace Comfy::Studio::Editor
 									writer.WriteU64(0);
 									writer.WriteU64(0);
 								}
+								else if (chartSectionIndex == 6)
+								{
+									writer.WriteStrPtr(SectionIDChartSectionIDEvents);
+									writer.WriteFuncPtr([&](IO::StreamWriter& writer)
+									{
+										writer.WriteSize(chart.Events.size());
+										writer.WriteI32(0);
+										writer.WriteI32(0);
+										for (const TimedEvent& event : chart.Events)
+										{
+											writer.WriteI32(event.StartTick.Ticks());
+											writer.WriteI32(event.EndTick.Ticks());
+											writer.WriteI32(static_cast<i32>(event.Kind));
+											writer.WriteI32(0);
+											writer.WriteI32(0);
+											writer.WriteI32(0);
+											writer.WriteI32(0);
+											writer.WriteI32(0);
+										}
+										writer.WriteAlignmentPadding(16);
+									});
+									writer.WriteU64(0);
+									writer.WriteU64(0);
+								}
 								else
 								{
 									writer.WriteStrPtr(SectionIDError);
@@ -899,6 +946,7 @@ namespace Comfy::Studio::Editor
 
 		chart.Targets = sourceChart.Targets.GetRawView();
 		chart.TempoChanges = sourceChart.TempoMap.GetRawView();
+		chart.Events = sourceChart.Events.GetRawView();
 
 		switch (sourceChart.Properties.Difficulty.Type)
 		{

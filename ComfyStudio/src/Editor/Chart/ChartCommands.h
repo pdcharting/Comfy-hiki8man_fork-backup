@@ -988,3 +988,139 @@ namespace Comfy::Studio::Editor
 		BeatTick newTick, oldTick;
 	};
 }
+
+namespace Comfy::Studio::Editor
+{
+	class ChangeEventSpan : public Undo::Command
+	{
+	public:
+		struct Data
+		{
+			EventID ID;
+			// NOTE: `Kind` is only used to prevent merging drag events of different sides of the span,
+			//       for example: the user dragged the left side and then the right side. We
+			//       want those to be two separate undoable actions.
+			i32 Kind; 
+			std::array<BeatTick, 2> NewValue, OldValue;
+		};
+
+		ChangeEventSpan(Chart& chart, const Data& data) : chart(chart), data(data)
+		{
+			TimedEvent& event = chart.Events[chart.Events.FindIndex(data.ID)];
+			this->data.OldValue = { event.StartTick, event.EndTick };
+		}
+
+		void Undo() override
+		{
+			TimedEvent& event = chart.Events[chart.Events.FindIndex(data.ID)];
+			event.StartTick = data.OldValue[0];
+			event.EndTick = data.OldValue[1];
+			chart.Events.Sort();
+		}
+
+		void Redo() override
+		{
+			TimedEvent& event = chart.Events[chart.Events.FindIndex(data.ID)];
+			event.StartTick = data.NewValue[0];
+			event.EndTick = data.NewValue[1];
+			chart.Events.Sort();
+		}
+
+		Undo::MergeResult TryMerge(Command& commandToMerge) override
+		{
+			auto* other = static_cast<decltype(this)>(&commandToMerge);
+
+			if (&other->chart != &chart)
+				return Undo::MergeResult::Failed;
+
+			if (other->data.ID != data.ID || other->data.Kind != data.Kind)
+				return Undo::MergeResult::Failed;
+
+			data.NewValue = other->data.NewValue;
+			return Undo::MergeResult::ValueUpdated;
+		}
+
+		std::string_view GetName() const override
+		{
+			/*
+			constexpr std::array<const char*, EnumCount<EventKind>()> names = {
+				"(?)",
+				"Change Challenge Time Span",
+				"Change Chance Time Span",
+				"Change Technical Zone Span",
+				"Change Lyric Span"
+			};
+
+			return names[static_cast<i32>(data.Kind)];
+			*/
+
+			return "Change Event Span";
+		}
+
+	private:
+		Chart& chart;
+		Data data;
+	};
+
+	class AddEvent : public Undo::Command
+	{
+	public:
+		AddEvent(Chart& chart, TimedEvent data) : chart(chart), data(data) { }
+
+		void Undo() override { chart.Events.Remove(data.ID); }
+		void Redo() override { data.ID = chart.Events.Add(data).ID; }
+		Undo::MergeResult TryMerge(Command&) override { return Undo::MergeResult::Failed; }
+
+		std::string_view GetName() const override
+		{
+			/*
+			constexpr std::array<const char*, EnumCount<EventKind>()> names = {
+				"(?)",
+				"Add Challenge Time",
+				"Add Chance Time",
+				"Add Technical Zone",
+				"Add Lyric"
+			};
+
+			return names[static_cast<i32>(data.Kind)];
+			*/
+
+			return "Add Event";
+		}
+
+	private:
+		Chart& chart;
+		TimedEvent data;
+	};
+
+	class RemoveEvent : public Undo::Command
+	{
+	public:
+		RemoveEvent(Chart& chart, TimedEvent& data) : chart(chart), data(data) { }
+
+		void Undo() override { chart.Events.Add(data); }
+		void Redo() override { chart.Events.Remove(data.ID); }
+		Undo::MergeResult TryMerge(Command&) override { return Undo::MergeResult::Failed; }
+
+		std::string_view GetName() const override
+		{
+			/*
+			constexpr std::array<const char*, EnumCount<EventKind>()> names = {
+				"(?)",
+				"Remove Challenge Time",
+				"Remove Chance Time",
+				"Remove Technical Zone",
+				"Remove Lyric"
+			};
+
+			return names[static_cast<i32>(data.Kind)];
+			*/
+
+			return "Remove Event";
+		}
+
+	private:
+		Chart& chart;
+		TimedEvent data;
+	};
+}

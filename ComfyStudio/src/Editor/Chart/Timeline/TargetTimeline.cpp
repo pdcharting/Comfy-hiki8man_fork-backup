@@ -75,6 +75,18 @@ namespace Comfy::Studio::Editor
 		playbackAutoScrollCursorPositionFactor = TargetTimelineDefaultPlaybackAutoScrollCursorPositionFactor;
 		infoColumnWidth = 180.0f;
 		enablePlaybackAutoScrollLocking = true;
+
+		rows.push_back(TimelineRow("Triangle", ButtonType::Triangle));
+		rows.push_back(TimelineRow("Square", ButtonType::Square));
+		rows.push_back(TimelineRow("Cross", ButtonType::Cross));
+		rows.push_back(TimelineRow("Circle", ButtonType::Circle));
+		rows.push_back(TimelineRow("Slide L", ButtonType::SlideL));
+		rows.push_back(TimelineRow("Slide R", ButtonType::SlideR));
+		rows.push_back(TimelineRow("Star", ButtonType::Star));
+		rows.push_back(TimelineRow("Chance / Challenge Time", ButtonType::Count));
+		rows.push_back(TimelineRow("Technical Zone", ButtonType::Count));
+
+		rowPositions.resize(rows.size());
 	}
 
 	BeatTick TargetTimeline::GridDivisionTick() const
@@ -190,7 +202,7 @@ namespace Comfy::Studio::Editor
 			const f32 maxRowHeight = GlobalUserData.TargetTimeline.ScalingBehaviorAutoFit.MaxRowHeight;
 
 			const f32 currentHeight = regions.Content.GetHeight();
-			const f32 maxHeight = (maxRowHeight * static_cast<f32>(EnumCount<ButtonType>()));
+			const f32 maxHeight = (maxRowHeight * static_cast<f32>(rows.size()));
 
 			// NOTE: Floor to multiple of two to avoid half-pixel hitboxes
 			const f32 scaledRowHeightFlooredToMultipleOfTwo = glm::floor((maxRowHeight * (currentHeight / maxHeight)) / 2.0f) * 2.0f;
@@ -213,6 +225,20 @@ namespace Comfy::Studio::Editor
 
 		if (GetIsPlayback())
 			UpdatePlaybackButtonSounds();
+
+#if COMFY_DEBUG && 1
+		static bool addedTestEvents = false;
+		if (!addedTestEvents)
+		{
+			TimedEvent event;
+			event.StartTick = BeatTick::FromBars(1);
+			event.EndTick = BeatTick::FromBars(2);
+			event.Kind = EventKind::ChanceTime;
+			workingChart->Events.Add(event);
+
+			addedTestEvents = true;
+		}
+#endif
 	}
 
 	void TargetTimeline::UpdateOffsetChangeCursorTimeAdjustment()
@@ -424,9 +450,11 @@ namespace Comfy::Studio::Editor
 		TimelineBase::OnDrawTimelineInfoColumn();
 
 		auto* drawList = Gui::GetWindowDrawList();
-		std::array<vec2, EnumCount<ButtonType>()> iconCenters;
 
-		for (size_t row = 0; row < EnumCount<ButtonType>(); row++)
+		std::vector<vec2> iconCenters;
+		iconCenters.resize(rows.size());
+
+		for (size_t row = 0; row < rows.size(); row++)
 		{
 			const f32 y = row * rowHeight;
 			const vec2 start = vec2(0.0f, y) + regions.InfoColumnContent.GetTL();
@@ -435,17 +463,27 @@ namespace Comfy::Studio::Editor
 			const vec2 center = vec2(start + end) / 2.0f;
 			iconCenters[row] = center;
 
-			targetYPositions[row] = center.y;
+			rowPositions[row].Y = start.y;
+			rowPositions[row].CenterY = center.y;
+
 			drawList->AddLine(vec2(start.x, end.y), end, Gui::GetColorU32(ImGuiCol_Border));
 		}
-
-		for (size_t row = 0; row < iconCenters.size(); row++)
+		
+		for (size_t row = 0; row < rows.size(); row++)
 		{
-			const auto tempTarget = TimelineTarget(BeatTick::Zero(), static_cast<ButtonType>(row));
-			renderHelper.DrawButtonIcon(drawList, tempTarget, iconCenters[row], iconScale);
+			if (rows[row].Target != ButtonType::Count)
+			{
+				const auto tempTarget = TimelineTarget(BeatTick::Zero(), static_cast<ButtonType>(row));
+				renderHelper.DrawButtonIcon(drawList, tempTarget, iconCenters[row], iconScale);
+				continue;
+			}
+
+			ImVec2 textSize = ImGui::CalcTextSize(rows[row].Name.c_str());
+			ImVec2 pos = ImVec2(iconCenters[row].x - textSize.x / 2.0f, iconCenters[row].y - textSize.y / 2.0f);
+			drawList->AddText(pos, 0xFFFFFFFF, rows[row].Name.c_str());
 		}
 
-#if COMFY_DEBUG || 1 // TODO: Decide on how exactly to handle this
+#if COMFY_DEBUG && 0 // TODO: Decide on how exactly to handle this
 		enum class TargetTimelineInfoColumnClickBehavior : u8
 		{
 			None,
@@ -486,7 +524,7 @@ namespace Comfy::Studio::Editor
 		const vec2 timelineTL = regions.Content.GetTL();
 		const vec2 timelineWidth = vec2(regions.Content.GetWidth(), 0.0f);
 
-		for (size_t row = 0; row < EnumCount<ButtonType>(); row++)
+		for (size_t row = 0; row < rows.size(); row++)
 		{
 			const vec2 start = timelineTL + vec2(0.0f, row * rowHeight);
 			const vec2 end = start + timelineWidth;
@@ -1127,7 +1165,7 @@ namespace Comfy::Studio::Editor
 		const auto visiblity = GetTimelineVisibility(screenX);
 
 		const size_t buttonIndex = static_cast<size_t>(target.Type);
-		const vec2 center = vec2(screenX + regions.Content.GetTL().x, targetYPositions[buttonIndex]);
+		const vec2 center = vec2(screenX + regions.Content.GetTL().x, rowPositions[buttonIndex].CenterY);
 		const f32 scale = GetTimelineTargetScaleFactor(target, buttonTime) * iconScale;
 
 		const bool tooEarly = (target.Tick < BeatTick::FromBars(1));
@@ -1326,6 +1364,147 @@ namespace Comfy::Studio::Editor
 		}
 	}
 
+	void TargetTimeline::DrawEventSection(const TimedEvent& event, const std::string& friendlyName, const u32 color, u32 secondaryColor)
+	{
+		auto drawEventMarker = [&](const vec2& pos, float scale, int32_t dir, ImU32 color)
+		{
+			vec2 size = vec2(rowHeight * scale);
+
+			// NOTE: The other marker will look weird without the correct winding order
+			if (dir == 1)
+			{
+				baseWindowDrawList->AddTriangleFilled(
+					vec2(pos.x, pos.y + size.y),
+					vec2(pos.x, pos.y),
+					vec2(pos.x + size.x * dir, pos.y),
+					color
+				);
+			}
+			else if (dir == -1)
+			{
+				baseWindowDrawList->AddTriangleFilled(
+					vec2(pos.x, pos.y + size.y),
+					vec2(pos.x + size.x * dir, pos.y),
+					vec2(pos.x, pos.y),
+					color
+				);
+			}
+
+#if COMFY_DEBUG && 0
+			// NOTE: Draw marker BB
+			ImRect bb = CalcEventMarkerBox(event, dir == 1 ? EventMarker::Start : EventMarker::End);
+			baseWindowDrawList->AddRect(bb.GetTL(), bb.GetBR(), 0xFFFFFFFF);
+#endif
+		};
+
+		char eventLabel[128] = { 0 };
+#if COMFY_DEBUG && 0
+		sprintf_s(eventLabel, "%s [ID: %zu]\n%u -> %u", friendlyName.c_str(), event.ID, event.StartTick.Ticks(), event.EndTick.Ticks());
+#else
+		strcpy_s(eventLabel, friendlyName.c_str());
+#endif
+
+		ImRect box = CalcEventBox(event);
+		baseWindowDrawList->AddRectFilled(box.GetTL(), box.GetBR(), color);
+		baseWindowDrawList->AddLine(box.GetTL(), box.GetBL(), secondaryColor);
+		baseWindowDrawList->AddLine(box.GetTR(), box.GetBR(), secondaryColor);
+
+		drawEventMarker(box.GetTL(), 0.4f, +1, secondaryColor);
+		drawEventMarker(box.GetTR(), 0.4f, -1, secondaryColor);
+		baseWindowDrawList->AddText(box.GetCenter() - ImGui::CalcTextSize(eventLabel) / 2.0f, 0xFFFFFFFF, eventLabel);
+	}
+
+	void TargetTimeline::DrawTimelineEventSections()
+	{
+		size_t ctCount = 0;
+		size_t techZoneCount = 0;
+		size_t lyricCount = 0;
+
+		for (TimedEvent& event : workingChart->Events)
+		{
+			u32 color = 0xFFFFFFFF;
+			u32 secondaryColor = 0xFFFFFFFF;
+			char nameBuffer[256] = { 0 };
+
+			switch (event.Kind)
+			{
+			case EventKind::ChallengeTime:
+				sprintf_s(nameBuffer, "Challenge Time #%zu", ++ctCount);
+				color = 0x403333E8;
+				secondaryColor = 0xFF1010E3;
+				break;
+			case EventKind::ChanceTime:
+				sprintf_s(nameBuffer, "Chance Time #%zu", ++ctCount);
+				color = GetColor(EditorColor_ChanceTimeBase);
+				secondaryColor = GetColor(EditorColor_ChanceTimeHighlights);
+				break;
+			case EventKind::TechnicalZone:
+				sprintf_s(nameBuffer, "Technical Zone #%zu", ++techZoneCount);
+				color = 0x4020B9FA;
+				secondaryColor = 0xFF146BF7;
+				break;
+			}
+
+			DrawEventSection(event, nameBuffer, color, secondaryColor);
+		}
+	}
+
+	ImRect TargetTimeline::CalcEventBox(const TimedEvent& event)
+	{
+		f32 startX = glm::round(GetTimelinePosition(event.StartTick) - GetScrollX());
+		f32 startY = rowPositions[eventRowIndices[static_cast<size_t>(event.Kind)]].Y;
+		f32 endX = glm::round(GetTimelinePosition(event.EndTick) - GetScrollX());
+
+		return ImRect(
+			regions.Content.GetTL().x + startX, startY,
+			regions.Content.GetTL().x + endX, startY + rowHeight
+		);
+	}
+
+	ImRect TargetTimeline::CalcEventMarkerBox(const TimedEvent& event, EventMarker marker)
+	{
+		if (marker == EventMarker::Both)
+		{
+			ImRect bb = CalcEventBox(event);
+			bb.Min.x += EventMarkerBoxWidth;
+			bb.Max.x -= EventMarkerBoxWidth;
+			return bb;
+		}
+
+		BeatTick tick = (marker == EventMarker::Start) ? event.StartTick : event.EndTick;
+		f32 x = glm::round(GetTimelinePosition(tick) - GetScrollX());
+		f32 y = rowPositions[eventRowIndices[static_cast<size_t>(event.Kind)]].Y;
+
+		return ImRect(
+			regions.Content.GetTL().x + x - EventMarkerBoxWidth, y,
+			regions.Content.GetTL().x + x + EventMarkerBoxWidth, y + rowHeight
+		);
+	}
+
+	TimedEvent* TargetTimeline::FindIntersectingEvent(EventKind kind, BeatTick startTick, BeatTick endTick, EventID ignoreID)
+	{
+		EventKind secondaryKind = (kind == EventKind::ChanceTime ? EventKind::ChallengeTime : kind == EventKind::ChallengeTime ? EventKind::ChanceTime : EventKind::None);
+
+		for (TimedEvent& srcEvent : workingChart->Events)
+		{
+			if (srcEvent.ID == ignoreID)
+				continue;
+
+			if (srcEvent.Kind == kind || (secondaryKind != EventKind::None && srcEvent.Kind == secondaryKind))
+			{
+				if (startTick          >= srcEvent.StartTick && startTick          <= srcEvent.EndTick ||
+					srcEvent.StartTick >= startTick          && srcEvent.StartTick <= endTick          ||
+					endTick            >  srcEvent.StartTick && endTick            <= srcEvent.EndTick ||
+					srcEvent.EndTick   >  startTick          && srcEvent.EndTick   <= endTick)
+				{
+					return &srcEvent;
+				}
+			}
+		}
+
+		return nullptr;
+	}
+
 	void TargetTimeline::OnUpdateInput()
 	{
 		const auto deltaTime = TimeSpan::FromSeconds(Gui::GetIO().DeltaTime);
@@ -1335,17 +1514,21 @@ namespace Comfy::Studio::Editor
 		UpdateKeyboardCtrlInput();
 		UpdateCursorKeyboardInput();
 
-		UpdateInputSelectionDragging(undoManager, *workingChart);
-		UpdateInputCursorClick();
-		UpdateInputCursorScrubbing();
-		UpdateInputTargetPlacement();
+		if (!UpdateInputEventDragging(undoManager, *workingChart))
+		{
+			UpdateInputSelectionDragging(undoManager, *workingChart);
+			UpdateInputCursorClick();
+			UpdateInputCursorScrubbing();
+			UpdateInputTargetPlacement();
 
-		UpdateInputContextMenu();
-		UpdateInputBoxSelection();
+			UpdateInputContextMenu();
+			UpdateInputBoxSelection();
+		}
 	}
 
 	void TargetTimeline::OnDrawTimelineContents()
 	{
+		DrawTimelineEventSections();
 		DrawRangeSelection();
 		DrawTimelineRangedPlacement();
 		DrawTimelineTargets();
@@ -1536,6 +1719,92 @@ namespace Comfy::Studio::Editor
 		}
 	}
 
+	bool TargetTimeline::UpdateInputEventDragging(Undo::UndoManager& undoManager, Chart& chart)
+	{
+		if (!eventDrag.IsDragging && Gui::IsWindowFocused())
+		{
+			eventDrag.IsHovering = false;
+			for (TimedEvent& event : chart.Events)
+			{
+				ImRect startBB = CalcEventMarkerBox(event, EventMarker::Start);
+				ImRect endBB = CalcEventMarkerBox(event, EventMarker::End);
+				ImRect fullBB = CalcEventMarkerBox(event, EventMarker::Both);
+				ImVec2 mouse = Gui::GetMousePos();
+
+				if (startBB.Contains(mouse) || endBB.Contains(mouse) || fullBB.Contains(mouse))
+				{
+					eventDrag.IsHovering = true;
+					eventDragMarker = startBB.Contains(mouse) ? EventMarker::Start : endBB.Contains(mouse) ? EventMarker::End : EventMarker::Both;
+
+					if (Gui::IsMouseClicked(ImGuiMouseButton_Left))
+					{
+						eventDrag.IsDragging = true;
+						eventDrag.TickOnPress = GetCursorMouseXTick(false);
+						eventDrag.ThisFrameMouseTick = eventDrag.TickOnPress;
+						eventDrag.TicksMovedSoFar = BeatTick::Zero();
+						workingEventID = event.ID;
+						undoManager.DisallowMergeForLastCommand();
+						break;
+					}
+				}
+			}
+		}	
+
+		if (Gui::IsWindowFocused() && (eventDrag.IsDragging || eventDrag.IsHovering))
+			Gui::SetMouseCursor(eventDragMarker == EventMarker::Both ? ImGuiMouseCursor_ResizeAll : ImGuiMouseCursor_ResizeEW);
+
+		if (eventDrag.IsDragging && workingEventID != -1)
+		{
+			TimedEvent& workingEvent = chart.Events[chart.Events.FindIndex(workingEventID)];
+			if (Gui::IsMouseReleased(ImGuiMouseButton_Left))
+			{
+				eventDrag.IsDragging = false;
+				eventDrag.IsHovering = false;
+				return false;
+			}
+
+			eventDrag.LastFrameMouseTick = eventDrag.ThisFrameMouseTick;
+			eventDrag.ThisFrameMouseTick = GetCursorMouseXTick(false);
+			eventDrag.TicksMovedSoFar += eventDrag.ThisFrameMouseTick - eventDrag.LastFrameMouseTick;
+			BeatTick tickIncrement = FloorTickToGrid(eventDrag.TicksMovedSoFar);
+			
+			std::array<BeatTick, 2> newValue = {};
+			switch (eventDragMarker)
+			{
+			case EventMarker::Start:
+				newValue = { workingEvent.StartTick + tickIncrement, workingEvent.EndTick };
+				break;
+			case EventMarker::End:
+				newValue = { workingEvent.StartTick, workingEvent.EndTick + tickIncrement };
+				break;
+			case EventMarker::Both:
+				newValue = { workingEvent.StartTick + tickIncrement, workingEvent.EndTick + tickIncrement };
+				break;
+			}
+
+			if (tickIncrement != BeatTick::Zero())
+			{
+				if (FindIntersectingEvent(workingEvent.Kind, newValue[0], newValue[1], workingEvent.ID) != nullptr)
+					return true;
+
+				if (eventDragMarker != EventMarker::Both && (newValue[0] >= workingEvent.EndTick || newValue[1] <= workingEvent.StartTick))
+					return true;
+
+				ChangeEventSpan::Data data = {};
+				data.ID = workingEventID;
+				data.Kind = static_cast<i32>(eventDragMarker);
+				data.NewValue = newValue;
+
+				undoManager.Execute<ChangeEventSpan>(chart, data);
+				eventDrag.TicksMovedSoFar -= tickIncrement;
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
 	void TargetTimeline::UpdateInputSelectionDragging(Undo::UndoManager& undoManager, Chart& chart)
 	{
 		if (!selectionDrag.IsDragging)
@@ -1558,7 +1827,7 @@ namespace Comfy::Studio::Editor
 				if (!target.IsSelected)
 					continue;
 
-				const vec2 center = vec2(GetTimelinePosition(target.Tick) - GetScrollX() + regions.Content.GetTL().x, targetYPositions[static_cast<size_t>(target.Type)]);
+				const vec2 center = vec2(GetTimelinePosition(target.Tick) - GetScrollX() + regions.Content.GetTL().x, rowPositions[static_cast<size_t>(target.Type)].CenterY);
 				const auto hitbox = ImRect(center - iconHitboxHalfSize, center + iconHitboxHalfSize);
 
 				if (!hitbox.Contains(Gui::GetMousePos()))
@@ -1903,7 +2172,22 @@ namespace Comfy::Studio::Editor
 		if (Gui::IsMouseReleased(ImGuiMouseButton_Right) && Gui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) && regions.Content.Contains(Gui::GetMousePos()))
 		{
 			if (!Gui::IsAnyItemHovered())
+			{
+				auto findHoveredEventID = [&]()
+				{
+					for (const TimedEvent& event : workingChart->Events)
+					{
+						ImRect fullBB = CalcEventBox(event);
+						if (fullBB.Contains(Gui::GetMousePos()))
+							return event.ID;
+					}
+
+					return static_cast<EventID>(-1);
+				};
+
+				rightClickHoveredEventID = findHoveredEventID();
 				Gui::OpenPopup(contextMenuID);
+			}
 		}
 
 		if (Gui::BeginPopup(contextMenuID, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoMove))
@@ -2096,6 +2380,40 @@ namespace Comfy::Studio::Editor
 			if (Gui::MenuItem("Remove Targets", Input::ToString(GlobalUserData.Input.TargetTimeline_DeleteSelection).data(), nullptr, (selectionCount > 0)))
 				RemoveAllSelectedTargets(undoManager, *workingChart, selectionCount);
 
+			Gui::Separator();
+
+			if (Gui::BeginMenu("Add Event"))
+			{
+				BeatTick startTick = GetTargetPlacementCursorTickWithAdjustedOffsetSetting();
+				BeatTick endTick = startTick + GridDivisionTick();
+
+				auto isBlocked = [&](EventKind kind)
+				{
+					return CheckHasIntersectingEvents(startTick, kind) || CheckHasIntersectingEvents(endTick, kind);
+				};
+
+				if (Gui::MenuItem("Challenge Time", "", nullptr, !isBlocked(EventKind::ChallengeTime)))
+					undoManager.Execute<AddEvent>(*workingChart, TimedEvent(EventKind::ChallengeTime, startTick, endTick));
+
+				if (Gui::MenuItem("Chance Time", "", nullptr, !isBlocked(EventKind::ChallengeTime)))
+					undoManager.Execute<AddEvent>(*workingChart, TimedEvent(EventKind::ChanceTime, startTick, endTick));
+
+				if (Gui::MenuItem("Technical Zone", "", nullptr, !isBlocked(EventKind::TechnicalZone)))
+					undoManager.Execute<AddEvent>(*workingChart, TimedEvent(EventKind::TechnicalZone, startTick, endTick));
+
+				if (Gui::MenuItem("Lyric", "", nullptr, !isBlocked(EventKind::Lyrics) && false)) { }
+
+				Gui::EndMenu();
+			}
+
+			if (Gui::MenuItem("Remove Event", "", nullptr, rightClickHoveredEventID != -1))
+			{
+				TimedEvent& event = workingChart->Events[workingChart->Events.FindIndex(rightClickHoveredEventID)];
+				rightClickHoveredEventID = static_cast<EventID>(-1);
+
+				undoManager.Execute<RemoveEvent>(*workingChart, event);
+			}
+
 			Gui::EndPopup();
 		}
 	}
@@ -2143,7 +2461,7 @@ namespace Comfy::Studio::Editor
 
 				auto isTargetInSelectionRange = [&](const auto& target)
 				{
-					const f32 y = targetYPositions[static_cast<size_t>(target.Type)];
+					const f32 y = rowPositions[static_cast<size_t>(target.Type)].CenterY;
 					return (y >= minY && y <= maxY) && (target.Tick >= minTick && target.Tick <= maxTick);
 				};
 
@@ -2197,6 +2515,25 @@ namespace Comfy::Studio::Editor
 			boxSelection.IsActive = false;
 			boxSelection.IsSufficientlyLarge = false;
 		}
+	}
+
+	bool TargetTimeline::CheckHasIntersectingEvents(BeatTick tick, EventKind kind, EventID ignoreID)
+	{
+		EventKind secondaryKind = (kind == EventKind::ChanceTime ? EventKind::ChallengeTime : kind == EventKind::ChallengeTime ? EventKind::ChanceTime : EventKind::None);
+
+		for (TimedEvent& event : workingChart->Events)
+		{
+			if (event.ID == ignoreID)
+				continue;
+
+			if (event.Kind == kind || (secondaryKind != EventKind::None && event.Kind == secondaryKind))
+			{
+				if (tick >= event.StartTick && tick <= event.EndTick)
+					return true;
+			}
+		}
+
+		return false;
 	}
 
 	size_t TargetTimeline::CountSelectedTargets() const

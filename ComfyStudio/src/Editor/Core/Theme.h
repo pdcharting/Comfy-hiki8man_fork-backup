@@ -40,6 +40,10 @@ namespace Comfy::Studio::Editor
 		EditorColor_KeyFrameConnectionAlt,
 		EditorColor_KeyFrameSelected,
 		EditorColor_KeyFrameBorder,
+		EditorColor_ChanceTimeBase,
+		EditorColor_ChanceTimeHighlights,
+		EditorColor_TechZoneBase,
+		EditorColor_TechZoneHighlights,
 		EditorColor_Count,
 	};
 
