@@ -784,7 +784,7 @@ namespace Comfy::Studio
 			func(userData.Input.TargetTimeline_ToggleMetronome, "target_timeline_toggle_metronome");
 			func(userData.Input.TargetTimeline_ToggleTargetHolds, "target_timeline_toggle_target_holds");
 			func(userData.Input.TargetTimeline_ToggleTargetDoubles, "target_timeline_toggle_target_doubles");
-			func(userData.Input.TargetTimeline_ToggleTargetDoubles, "target_timeline_toggle_target_chance");
+			func(userData.Input.TargetTimeline_ToggleTargetChance, "target_timeline_toggle_target_chance");
 			func(userData.Input.TargetTimeline_PlaceTriangle, "target_timeline_place_triangle");
 			func(userData.Input.TargetTimeline_PlaceSquare, "target_timeline_place_square");
 			func(userData.Input.TargetTimeline_PlaceCross, "target_timeline_place_cross");
