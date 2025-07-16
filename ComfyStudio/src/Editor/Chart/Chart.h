@@ -2,6 +2,7 @@
 #include "Types.h"
 #include "SortedTargetList.h"
 #include "SortedTempoMap.h"
+#include "SortedEventList.h"
 #include "Editor/Common/AsyncLoadedImageFile.h"
 #include "Time/TimeSpan.h"
 
@@ -139,6 +140,7 @@ namespace Comfy::Studio::Editor
 
 		SortedTargetList Targets;
 		SortedTempoMap TempoMap;
+		SortedEventList Events;
 
 	public:
 		inline std::string_view SongTitleOrDefault() const { return Properties.Song.Title.empty() ? FallbackSongTitle : Properties.Song.Title; }

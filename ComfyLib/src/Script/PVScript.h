@@ -435,6 +435,9 @@ namespace Comfy
 		{
 			u32 DifficultyFlags;
 			i32 ModeType;
+
+			ModeSelect() = default;
+			constexpr ModeSelect(u32 flags, i32 type) : DifficultyFlags(flags), ModeType(type) {}
 		};
 
 		struct BarTimeSet : LayoutBase<BarTimeSet, PVCommandType::BarTimeSet>

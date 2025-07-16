@@ -63,6 +63,7 @@ namespace Comfy::Studio::Editor
 
 			std::vector<TimelineTarget> Targets;
 			std::vector<TempoChange> TempoChanges;
+			std::vector<TimedEvent> Events;
 
 			struct ButtonSoundData
 			{

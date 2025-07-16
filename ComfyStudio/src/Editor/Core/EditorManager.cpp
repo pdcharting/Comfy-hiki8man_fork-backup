@@ -85,6 +85,9 @@ namespace Comfy::Studio::Editor
 		SetColor(EditorColor_KeyFrameConnectionAlt, 0xFF4E4E4E);
 		SetColor(EditorColor_KeyFrameSelected, 0xFF5785D9);
 		SetColor(EditorColor_KeyFrameBorder, 0xFF1A1B1B);
+
+		SetColor(EditorColor_ChanceTimeBase, 0x40FF75DE);
+		SetColor(EditorColor_ChanceTimeHighlights, 0xFFA50084);
 	}
 
 	EditorManager::EditorManager(ComfyStudioApplication& parent) : parent(parent)

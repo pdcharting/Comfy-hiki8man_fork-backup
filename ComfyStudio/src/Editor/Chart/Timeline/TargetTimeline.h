@@ -167,11 +167,15 @@ namespace Comfy::Studio::Editor
 
 		void DrawTimelineCursor() override;
 		void DrawBoxSelection();
+		void DrawEventSection(const TimedEvent& event, const std::string& friendlyName, u32 color, u32 secondaryColor);
+		void DrawTimelineEventSections();
+
 		void OnUpdateInput() override;
 		void OnDrawTimelineContents() override;
 		void UpdateKeyboardCtrlInput();
 		void UpdateCursorKeyboardInput();
 
+		bool UpdateInputEventDragging(Undo::UndoManager& undoManager, Chart& chart);
 		void UpdateInputSelectionDragging(Undo::UndoManager& undoManager, Chart& chart);
 		bool CheckIsAnySyncPairPartiallySelected() const;
 		bool CheckIsSelectionNotBlocked(BeatTick increment) const;
@@ -184,6 +188,8 @@ namespace Comfy::Studio::Editor
 		void UpdateInputBoxSelection();
 
 	private:
+		bool CheckHasIntersectingEvents(BeatTick tick, EventKind kind, EventID ignoreID = -1);
+
 		size_t CountSelectedTargets() const;
 
 		void ToggleSelectedTargetsHolds(Undo::UndoManager& undoManager, Chart& chart);
@@ -297,13 +303,59 @@ namespace Comfy::Studio::Editor
 		f32 playbackSpeedStep = 0.25f;
 
 	private:
+		struct TimelineRow
+		{
+			std::string Name;
+			ButtonType Target;
+
+			TimelineRow()
+			{
+				Name = "(?)";
+				Target = ButtonType::Count;
+			}
+
+			TimelineRow(const std::string& name, ButtonType target)
+			{
+				Name = name;
+				Target = target;
+			}
+		};
+
+		struct TimelineRowPos
+		{
+			f32 Y;
+			f32 CenterY;
+		};
+
+		std::vector<TimelineRow> rows;
+		std::vector<TimelineRowPos> rowPositions;
+		static constexpr std::array<size_t, EnumCount<EventKind>()> eventRowIndices = {
+			0,
+			EnumCount<ButtonType>(),
+			EnumCount<ButtonType>(),
+			EnumCount<ButtonType>() + 1,
+			EnumCount<ButtonType>() + 2
+		};
+
+		enum class EventMarker
+		{
+			Both = 0,
+			Start = 1,
+			End = 2,
+		};
+
+		static constexpr f32 EventMarkerBoxWidth = 3.0f;
+
+		ImRect CalcEventBox(const TimedEvent& event);
+		ImRect CalcEventMarkerBox(const TimedEvent& event, EventMarker marker);
+		TimedEvent* FindIntersectingEvent(EventKind kind, BeatTick startTick, BeatTick endTick, EventID ignoreID = -1);
+
+	private:
 		f32 iconScale = TargetTimelineDefaultIconScale;
 		f32 rowHeight = TargetTimelineDefaultRowHeight;
 		f32 iconHitboxSize = (TargetTimelineDefaultRowHeight - TargetTimelineRowHeightHitboxOffset);
 
 		std::vector<vec2> tempSelectedTargetPositionBuffer;
-
-		std::array<f32, EnumCount<ButtonType>()> targetYPositions = {};
 		TimelineRenderHelper renderHelper = {};
 
 	private:
@@ -364,5 +416,11 @@ namespace Comfy::Studio::Editor
 		bool isPlacingRangedNote = false;
 		ButtonType placingButtonType = ButtonType::Count;
 		BeatTick placingButtonStartTick = BeatTick::Zero();
+
+	private:
+		SelectionDragData eventDrag = {};
+		EventMarker eventDragMarker = EventMarker::Both;
+		EventID workingEventID = -1;
+		EventID rightClickHoveredEventID = -1;
 	};
 }

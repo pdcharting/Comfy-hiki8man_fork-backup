@@ -124,12 +124,37 @@ namespace Comfy::Studio::Editor
 			const bool isLong = target.Flags.IsLong;
 			const i32 index = static_cast<i32>(target.Type);
 
-			const i32 normalIDs[7] = { 0, 1,  2,  3, 0, 0, 12 };
-			const i32 doubleIDs[7] = { 4, 5,  6,  7, 0, 0, 14 };
-			const i32 longIDs[7]   = { 8, 9, 10, 11, 0, 0, 13 };
+			const i32 normalIDs[7] = { 0, 3,  2,  1, 0, 0, 12 };
+			const i32 doubleIDs[7] = { 4, 7,  6,  5, 0, 0, 14 };
+			const i32 longIDs[7]   = { 8, 11, 10, 9, 0, 0, 13 };
 
 			if (target.Type == ButtonType::Star && isChance)
 				return static_cast<TargetType>(15);
+
+			if (isDouble)
+				return static_cast<TargetType>(doubleIDs[index]);
+
+			if (isLong)
+				return static_cast<TargetType>(longIDs[index]);
+
+			return static_cast<TargetType>(normalIDs[index]);
+		}
+
+		constexpr PVCommandLayout::TargetType ButtonTypeToPVCommandTargetTypeNC(const TimelineTarget& target)
+		{
+			using namespace PVCommandLayout;
+			const bool isChance = target.Flags.IsChance;
+			const bool isDouble = target.Flags.IsDouble;
+			const bool isLong = target.Flags.IsLong;
+			const i32 index = static_cast<i32>(target.Type);
+
+			const i32 normalIDs[7] = {  0,  3,  2,  1, 12, 13, 37 };
+			const i32 holdIDs[7]   = {  4,  7,  6,  5,  0,  0,  0 };
+			const i32 doubleIDs[7] = { 29, 32, 31, 30,  0,  0, 39 };
+			const i32 longIDs[7]   = { 33, 36, 35, 34,  0,  0, 38 };
+
+			if (target.Type == ButtonType::Star && isChance)
+				return static_cast<TargetType>(40);
 
 			if (isDouble)
 				return static_cast<TargetType>(doubleIDs[index]);
@@ -158,7 +183,7 @@ namespace Comfy::Studio::Editor
 			}
 		}
 
-		PVScript ConvertChartToPVScript(const Chart& chart, vec4 backgroundTint = {}, ScriptConversionMode mode = ScriptConversionMode::Normal, std::vector<NCExtraInfo>* extraInfo = nullptr)
+		PVScript ConvertChartToPVScript(const Chart& chart, vec4 backgroundTint = {}, ScriptConversionMode mode = ScriptConversionMode::Normal)
 		{
 			PVScriptBuilder scriptBuilder {};
 
@@ -194,6 +219,46 @@ namespace Comfy::Studio::Editor
 			{
 				scriptBuilder.Add(moviePlayCommandTime, PVCommandLayout::MoviePlay(1));
 				scriptBuilder.Add(moviePlayCommandTime, PVCommandLayout::MovieDisp(true));
+			}
+
+			i32 lyricIndex = 0;
+			for (const TimedEvent& event : chart.Events)
+			{
+				TimeSpan startTime = chart.TempoMap.TickToTime(event.StartTick) + targetTimeDelayToEnsurePositiveSongAndMovieStart;
+				TimeSpan endTime = chart.TempoMap.TickToTime(event.EndTick) + targetTimeDelayToEnsurePositiveSongAndMovieStart;
+
+				i32 startMode = -1;
+				i32 endMode = -1;
+				bool lyrics = false;
+				switch (event.Kind)
+				{
+				case EventKind::ChallengeTime:
+					startMode = 1;
+					endMode = 3;
+					break;
+				case EventKind::ChanceTime:
+					startMode = (mode == ScriptConversionMode::F) ? 1 : 4;
+					endMode = (mode == ScriptConversionMode::F) ? 3 : 5;
+					break;
+				case EventKind::TechnicalZone:
+					startMode = 8;
+					endMode = 9;
+					break;
+				case EventKind::Lyrics:
+					++lyricIndex;
+					lyrics = true;
+					break;
+				}
+
+				if (startMode != -1 && endMode != -1)
+				{
+					scriptBuilder.Add(startTime, PVCommandLayout::ModeSelect(31, startMode));
+					scriptBuilder.Add(endTime, PVCommandLayout::ModeSelect(31, endMode));
+				}
+				else if (lyrics)
+				{
+					// TODO: Add LYRIC command
+				}
 			}
 
 			i32 lastFlyingTimeMS = {};
@@ -239,7 +304,7 @@ namespace Comfy::Studio::Editor
 					i32 amplitude = static_cast<i32>(targetProperties.Amplitude);
 					i32 frequency = static_cast<i32>(targetProperties.Frequency);
 
-					if (mode == ScriptConversionMode::Normal || mode == ScriptConversionMode::NC)
+					if (mode == ScriptConversionMode::Normal)
 					{
 						auto targetCommand = PVCommandLayout::Target();
 						targetCommand.Type = ButtonTypeToPVCommandTargetType(targetInSyncPair);
@@ -251,23 +316,15 @@ namespace Comfy::Studio::Editor
 						targetCommand.Frequency = frequency;
 
 						scriptBuilder.Add(spawnTimes.TargetTime, targetCommand);
-
-						if (extraInfo != nullptr)
-						{
-							if (targetInSyncPair.Flags.IsLong)
-							{
-								NCExtraInfo& info = extraInfo->emplace_back();
-								info.Index = comboIndex;
-								info.SubIndex = indexWithinPair;
-								info.Length = -1.0f;
-								info.IsEnd = targetInSyncPair.IsLongEnd();
-							}
-						}
 					}
-					else if (mode == ScriptConversionMode::F)
+					else if (mode == ScriptConversionMode::F || mode == ScriptConversionMode::NC)
 					{
 						auto targetCommand = PVCommandLayout::TargetF();
-						targetCommand.Type = ButtonTypeToPVCommandTargetTypeF(targetInSyncPair);
+						if (mode == ScriptConversionMode::F)
+							targetCommand.Type = ButtonTypeToPVCommandTargetTypeF(targetInSyncPair);
+						else
+							targetCommand.Type = ButtonTypeToPVCommandTargetType(targetInSyncPair);
+
 						targetCommand.Length = -1;
 						targetCommand.IsLongEnd = targetInSyncPair.IsLongEnd() ? 1 : -1;
 						targetCommand.PositionX = posX;
@@ -1017,33 +1074,9 @@ namespace Comfy::Studio::Editor
 		if (outputScriptPath.empty())
 			return;
 
-		std::string csvFilePath = Comfy::IO::Path::ChangeExtension(outputScriptPath, ".csv");
-		std::vector<NCExtraInfo> ncExtraInfo;
-
-		auto convertedPVScript = ConvertChartToPVScript(chart, {}, mode, &ncExtraInfo);
-		convertedPVScript.Version = mode == ScriptConversionMode::F ? PVScriptVersion::F : PVScriptVersion::FT;
+		auto convertedPVScript = ConvertChartToPVScript(chart, {}, mode);
+		convertedPVScript.Version = (mode == ScriptConversionMode::F || mode == ScriptConversionMode::NC) ? PVScriptVersion::F : PVScriptVersion::FT;
 		IO::File::Save(outputScriptPath, convertedPVScript);
-
-		if (ncExtraInfo.size() < 1)
-			return;
-
-		std::string csvData = "index,sub_index,length,end\n";
-		for (const NCExtraInfo& info : ncExtraInfo)
-		{
-			char buffer[128] = { 0 };
-			sprintf_s(buffer, "%d,%d,%.f,%s\n", info.Index, info.SubIndex, info.Length, info.IsEnd ? "true" : "false");
-			csvData += std::string(buffer);
-		}
-
-		IO::FileStream file = IO::File::CreateWrite(csvFilePath);
-		if (!file.CanWrite())
-		{
-			file.Close();
-			return;
-		}
-
-		file.WriteBuffer(csvData.data(), csvData.size());
-		file.Close();
 	}
 
 	void PVScriptExportWindow::StartAsyncExport(PVExportWindowInputData inData)
