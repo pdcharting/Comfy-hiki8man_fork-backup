@@ -62,12 +62,12 @@ namespace Comfy::Studio::Editor
 		sprites.TargetLine = findSprite("TARGET_LINE");
 		sprites.TargetLineYellow = findSprite("TARGET_LINE_YELLOW");
 
-		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::Triangle)] = findSprite("TIMELINE_TRIANGLE_CHANCE");
-		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::Square)] = findSprite("TIMELINE_SQUARE_CHANCE");
-		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::Cross)] = findSprite("TIMELINE_CROSS_CHANCE");
-		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::Circle)] = findSprite("TIMELINE_CIRCLE_CHANCE");
-		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::SlideL)] = findSprite("TIMELINE_SLIDE_L_CHANCE");
-		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::SlideR)] = findSprite("TIMELINE_SLIDE_R_CHANCE");
+		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::Triangle)] = findSprite("TIMELINE_TRIANGLE");
+		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::Square)] = findSprite("TIMELINE_SQUARE");
+		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::Cross)] = findSprite("TIMELINE_CROSS");
+		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::Circle)] = findSprite("TIMELINE_CIRCLE");
+		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::SlideL)] = findSprite("TIMELINE_SLIDE_L");
+		sprites.ButtonIconsChance[static_cast<size_t>(ButtonType::SlideR)] = findSprite("TIMELINE_SLIDE_R");
 	}
 
 	void TimelineRenderHelper::DrawButtonIcon(ImDrawList* drawList, const TimelineTarget& target, vec2 position, f32 scale, f32 transparency) const

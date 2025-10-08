@@ -341,7 +341,7 @@ namespace Comfy::Studio::Editor
 						{
 							f32 fractions = chart.Targets.GetLengthInTicks(targetInSyncPair).BeatsFraction() / 4.0f;
 							if (fractions > 0.0f)
-								targetCommand.Length = static_cast<i32>(fractions * spawnTimes.FlyingTime.TotalSeconds() * 100000.0f);
+								targetCommand.Length = static_cast<i32>(fractions * spawnTimes.RealBPM.TotalSeconds() * 100000.0f);
 						}
 
 						scriptBuilder.Add(spawnTimes.TargetTime, targetCommand);
