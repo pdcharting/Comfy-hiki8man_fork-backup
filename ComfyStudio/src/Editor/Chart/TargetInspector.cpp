@@ -197,7 +197,7 @@ namespace Comfy::Studio::Editor
 				Gui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 
 			auto isHoldValueGetter = [](auto& t) { return static_cast<GuiProperty::Boolean>(t.Flags.IsHold); };
-			auto isHoldConditionGetter = [](auto& t) { return !IsSlideButtonType(t.Type) && !t.Flags.IsChance; };
+			auto isHoldConditionGetter = [](auto& t) { return !IsSlideButtonType(t.Type) && !t.Flags.IsChance && !t.Flags.IsDouble; };
 			BooleanGui("Is Hold", isHoldValueGetter, isHoldConditionGetter, [&](const bool newValue)
 			{
 				std::vector<ChangeTargetListIsHold::Data> targetData;
