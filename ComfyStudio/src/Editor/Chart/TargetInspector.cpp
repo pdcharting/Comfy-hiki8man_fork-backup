@@ -239,6 +239,27 @@ namespace Comfy::Studio::Editor
 						undoManager.Execute<ChangeTargetListIsChance>(chart, std::move(targetData));
 				});
 
+			auto isDoubleValueGetter = [](auto& t) { return static_cast<GuiProperty::Boolean>(t.Flags.IsDouble); };
+			auto isDoubleConditionGetter = [](auto& t) { return !IsSlideButtonType(t.Type) && !t.Flags.IsHold && !t.Flags.IsChance && !t.Flags.IsLong; };
+			BooleanGui("Is Double", isDoubleValueGetter, isDoubleConditionGetter, [&](const bool newValue)
+				{
+					std::vector<ChangeTargetListIsDouble::Data> targetData;
+					targetData.reserve(selectedTargets.size());
+
+					for (const auto& targetView : selectedTargets)
+					{
+						if (!isDoubleConditionGetter(*targetView))
+							continue;
+
+						auto& data = targetData.emplace_back();
+						data.ID = targetView.Target->ID;
+						data.NewValue = newValue;
+					}
+
+					if (!targetData.empty())
+						undoManager.Execute<ChangeTargetListIsDouble>(chart, std::move(targetData));
+				});
+
 			auto usePresetValueGetter = [](auto& t) { return static_cast<GuiProperty::Boolean>(!t.Flags.HasProperties); };
 			BooleanGui("Use Preset", usePresetValueGetter, [](auto& t) { return true; }, [&](const bool newValue)
 			{

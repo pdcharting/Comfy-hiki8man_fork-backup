@@ -586,6 +586,25 @@ namespace Comfy::Studio::Editor
 		std::string_view GetName() const override { return "Interpolate Target Distances"; }
 	};
 
+	class ChangeTargetListAmplitude : public ChangeTargetListProperties
+	{
+	public:
+		ChangeTargetListAmplitude(Chart& chart, std::vector<Data> data) : ChangeTargetListProperties(chart, std::move(data), TargetPropertyFlags_Amplitude) {}
+
+	public:
+		std::string_view GetName() const override { return "Change Target Amplitude"; }
+	};
+
+	class InterpolateTargetListAmplitude : public ChangeTargetListAmplitude
+	{
+	public:
+		using ChangeTargetListAmplitude::ChangeTargetListAmplitude;
+
+	public:
+		std::string_view GetName() const override { return "Interpolate Target Amplitude"; }
+	};
+
+
 	class ApplyTargetListAngleIncrements : public ChangeTargetListAngles
 	{
 	public:
@@ -845,6 +864,68 @@ namespace Comfy::Studio::Editor
 	public:
 		std::string_view GetName() const override { return "Convert Targets to Sustains"; }
 	};
+
+	// Add change double note support
+	class ChangeTargetListIsDouble : public Undo::Command
+	{
+	public:
+		struct Data
+		{
+			TimelineTargetID ID;
+			bool NewValue, OldValue;
+		};
+
+	public:
+		ChangeTargetListIsDouble(Chart& chart, std::vector<Data> data)
+			: chart(chart), targetData(std::move(data))
+		{
+			for (auto& data : targetData)
+			{
+				const auto& target = chart.Targets[chart.Targets.FindIndex(data.ID)];
+				data.OldValue = target.Flags.IsDouble;
+			}
+		}
+
+	public:
+		void Undo() override
+		{
+			for (const auto& data : targetData)
+			{
+				auto& target = chart.Targets[chart.Targets.FindIndex(data.ID)];
+				target.Flags.IsDouble = data.OldValue;
+			}
+		}
+
+		void Redo() override
+		{
+			for (const auto& data : targetData)
+			{
+				auto& target = chart.Targets[chart.Targets.FindIndex(data.ID)];
+				target.Flags.IsDouble = data.NewValue;
+			}
+		}
+
+		Undo::MergeResult TryMerge(Command& commandToMerge) override
+		{
+			return Undo::MergeResult::Failed;
+		}
+
+		std::string_view GetName() const override { return "Change Double Target"; }
+
+	private:
+		Chart& chart;
+		std::vector<Data> targetData;
+	};
+
+	class ToggleTargetListIsDouble : public ChangeTargetListIsDouble
+	{
+	public:
+		using ChangeTargetListIsDouble::ChangeTargetListIsDouble;
+
+	public:
+		std::string_view GetName() const override { return "Toggle Target Double"; }
+	};
+
 }
 
 namespace Comfy::Studio::Editor

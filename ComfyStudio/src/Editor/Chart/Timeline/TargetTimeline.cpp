@@ -2271,6 +2271,9 @@ namespace Comfy::Studio::Editor
 			if (Gui::MenuItem("Toggle Target Chance", Input::ToString(GlobalUserData.Input.TargetTimeline_ToggleTargetChance).data(), nullptr, anyChanceToggableTargetSelected))
 				ToggleSelectedTargetsChance(undoManager, *workingChart);
 
+			if (Gui::MenuItem("Toggle Target Double", Input::ToString(GlobalUserData.Input.TargetTimeline_ToggleTargetDoubles).data(), nullptr, anyChanceToggableTargetSelected))
+				ToggleSelectedTargetsDoubles(undoManager, *workingChart);
+
 			auto isSelectionConvertableToLong = [&]()
 			{
 				if (selectionCount % 2 != 0)
