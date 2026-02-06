@@ -353,3 +353,5 @@ ASALocalRun/
 /ComfyStudio/settings_app.json
 /ComfyStudio/settings_imgui.ini
 /ComfyStudio/settings_user.json
+/ComfyStudio/dev_rom
+/ComfyStudio/ComfyData.dat
