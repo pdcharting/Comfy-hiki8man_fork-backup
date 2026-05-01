@@ -382,7 +382,7 @@ namespace Comfy::Studio::Editor
 				target.NextID = FindNewTargetID(target.NextID);
 
 			if (target.PreviousID != TimelineTargetID::Null)
-				target.PreviousID = FindNewTargetID(target.ReferenceID);
+				target.PreviousID = FindNewTargetID(target.PreviousID);
 		}
 	}
 
