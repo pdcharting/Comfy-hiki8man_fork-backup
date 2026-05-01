@@ -153,7 +153,8 @@ namespace Comfy::Studio::Editor
 		// NOTE: Publicly set flags:
 		u16 IsDouble : 1;
 		u16 IsLong : 1;
-		u16 /* Reserved */ : 6;
+		u16 IsLink : 1;
+		u16 /* Reserved */ : 5;
 	};
 
 	static_assert(sizeof(TargetFlags) == sizeof(u32));
@@ -181,6 +182,8 @@ namespace Comfy::Studio::Editor
 
 		bool IsLongStart() const;
 		bool IsLongEnd() const;
+		bool IsLinkStarStart() const;
+		bool IsLinkStarEnd() const;
 	};
 
 	static_assert(sizeof(TimelineTarget) == 52);
@@ -205,6 +208,7 @@ namespace Comfy::Studio::Editor
 		i32 FindIndex(BeatTick tick, ButtonType type) const;
 		i32 FindIndex(TimelineTargetID id) const;
 		TimelineTarget* Find(TimelineTargetID id);
+		const TimelineTarget* Find(TimelineTargetID id) const;
 		TimelineTarget* FindWithReferenceID(TimelineTargetID refID);
 		TimelineTarget* FindNextOrPrevious(const TimelineTarget& target);
 

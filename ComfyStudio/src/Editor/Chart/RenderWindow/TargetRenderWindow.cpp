@@ -616,7 +616,33 @@ namespace Comfy::Studio::Editor
 				targetData.Scale = 1.0f;
 				targetData.Opacity = (target.IsSelected || !inCursorBarRange) ? 0.5f : 1.0f;
 
-				if (inCursorBarRange)
+				if (target.Flags.IsLink && !target.IsLinkStarStart())
+				{
+					const TimelineTarget* prevTarget = targets.Find(target.PreviousID);
+					if (prevTarget)
+					{
+						auto prevProperties = Rules::TryGetProperties(*prevTarget);
+						auto prevTimes = workingChart->TempoMap.GetTargetSpawnTimes(*prevTarget);
+						if (cursorTick > prevTimes.ButtonTick && cursorTick <= buttonTick)
+						{
+							TimeSpan length = buttonTime - prevTimes.ButtonTime;
+							TimeSpan currentTime = cursorTime - prevTimes.ButtonTime;
+							f64 linkProgress = Clamp(currentTime / length, 0.0, 1.0);
+
+							vec2 prevPosition = prevProperties.Position;
+							vec2 deltaPosition = properties.Position - prevPosition;
+
+							auto& buttonData = renderHelperEx.EmplaceButton();
+							buttonData = {};
+							buttonData.Type = targetData.Type;
+							buttonData.Shadow = TargetRenderHelper::ButtonShadowType::Black;
+							buttonData.Position = prevPosition + deltaPosition * linkProgress;
+							buttonData.Progress = progress;
+							buttonData.Scale = 1.0f;
+						}
+					}
+				}
+				else if (inCursorBarRange)
 				{
 					if (dispButton)
 					{

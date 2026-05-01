@@ -1189,7 +1189,7 @@ namespace Comfy::Studio::Editor
 		// NOTE: Draw long note length indicators
 		for (const auto& target : workingChart->Targets)
 		{
-			if (!target.IsLongStart())
+			if (!target.IsLongStart() && !target.Flags.IsLink)
 				continue;
 
 			if (target.NextID == TimelineTargetID::Null)
@@ -1209,7 +1209,6 @@ namespace Comfy::Studio::Editor
 			if (!startVisible && !endVisible)
 				continue;
 
-			//windowDrawList->AddLine(startCenter, endCenter, IM_COL32_WHITE, 4.0f);
 			renderHelper.DrawTargetLine(windowDrawList, target.Type, startCenter, endCenter, startScale * endScale, startOpacity * endOpacity);
 		}
 
@@ -2295,6 +2294,44 @@ namespace Comfy::Studio::Editor
 						targets.push_back(target);
 
 				undoManager.Execute<ConvertTargetsToLong>(*workingChart, targets);
+			}
+
+			auto isSelectionStarLinkable = [&]()
+			{
+				for (const auto& target : workingChart->Targets)
+				{
+					if (!target.IsSelected)
+						continue;
+
+					if (target.Type != ButtonType::Star)
+						return false;
+				}
+
+				return true;
+			};
+
+			if (Gui::MenuItem("Link", "", nullptr, isSelectionStarLinkable()))
+			{
+				std::vector<TimelineTarget*> targets;
+				for (auto& target : workingChart->Targets)
+				{
+					if (!target.IsSelected)
+						continue;
+
+					targets.push_back(&target);
+				}
+
+				for (size_t i = 0; i < targets.size(); i++)
+				{
+					TimelineTarget* target = targets[i];
+					target->Flags.IsLink = true;
+
+					if (i + 1 < targets.size())
+					{
+						target->NextID = targets[i + 1]->ID;
+						targets[i + 1]->PreviousID = target->ID;
+					}
+				}
 			}
 
 			if (Gui::BeginMenu("Modify Targets", (selectionCount > 0)))

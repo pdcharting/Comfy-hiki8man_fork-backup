@@ -132,6 +132,16 @@ namespace Comfy::Studio::Editor
 		return Flags.IsLong && static_cast<i32>(PreviousID) != 0;
 	}
 
+	bool TimelineTarget::IsLinkStarStart() const
+	{
+		return Type == ButtonType::Star && Flags.IsLink && PreviousID == TimelineTargetID::Null;
+	}
+
+	bool TimelineTarget::IsLinkStarEnd() const
+	{
+		return Type == ButtonType::Star && Flags.IsLink && NextID == TimelineTargetID::Null;
+	}
+
 	TimelineTargetID SortedTargetList::GetNextUniqueID()
 	{
 		return static_cast<TimelineTargetID>(++GlobalTimelineTargetIDCounter);
@@ -220,6 +230,12 @@ namespace Comfy::Studio::Editor
 	}
 
 	TimelineTarget* SortedTargetList::Find(TimelineTargetID id)
+	{
+		const TimelineTarget* target = Find(id);
+		return const_cast<TimelineTarget*>(target);
+	}
+
+	const TimelineTarget* SortedTargetList::Find(TimelineTargetID id) const
 	{
 		if (id == TimelineTargetID::Null)
 			return nullptr;
