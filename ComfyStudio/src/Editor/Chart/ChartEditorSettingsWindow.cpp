@@ -1900,7 +1900,7 @@ namespace Comfy::Studio::Editor
 				Gui::SameLine(0.0f, itemInnerSpacingX);
 				Gui::PushItemWidth((availWidthTotal - itemInnerSpacingX - itemInnerSpacingX) / 2.0f);
 
-				static constexpr std::array<const char*, EnumCount<ButtonType>()> buttonNames = { "Triangle", "Square", "Cross", "Circle", "Slide Left", "Slide Right", };
+				static constexpr std::array<const char*, EnumCount<ButtonType>()> buttonNames = { "Triangle", "Square", "Cross", "Circle", "Slide Left", "Slide Right", "Star" };
 
 				char comboPreview[64]; comboPreview[0] = '\0';
 				if (binding.ButtonTypes != ButtonTypeFlags_None)
