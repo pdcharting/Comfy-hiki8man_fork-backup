@@ -511,6 +511,7 @@ namespace Comfy::Studio::Editor
 				renderer.UploadToGPUFreeCPUMemory(*sprGameNC);
 				sprites.LinkLineNormal = findSprite(*sprGameNC, "LINK_LINE_01");
 				sprites.LinkLineGlowy = findSprite(*sprGameNC, "LINK_LINE_02");
+				sprites.LinkLineDarkened = findSprite(*sprGameNC, "LINK_LINE_01_OFF");
 			}
 
 			if (const auto font36 = GetFont36(); font36 != nullptr)
@@ -1451,8 +1452,8 @@ namespace Comfy::Studio::Editor
 				color = vec4(1.0f, 1.0f, 1.0f, data.Progress);
 				break;
 			case LinkStarDisplayMode::Darkened:
-				texture = sprGameNC->TexSet.Textures[sprites.LinkLineNormal->TextureIndex].get();
-				color = vec4(0.35f, 0.35f, 0.35f, 1.0f);
+				texture = sprGameNC->TexSet.Textures[sprites.LinkLineDarkened->TextureIndex].get();
+				color = vec4(0.75f, 0.75f, 0.75f, 1.0f);
 				break;
 			case LinkStarDisplayMode::Glow:
 				texture = sprGameNC->TexSet.Textures[sprites.LinkLineGlowy->TextureIndex].get();
@@ -1793,6 +1794,7 @@ namespace Comfy::Studio::Editor
 
 			Spr* LinkLineNormal;
 			Spr* LinkLineGlowy;
+			Spr* LinkLineDarkened;
 
 		} sprites = {};
 	};
