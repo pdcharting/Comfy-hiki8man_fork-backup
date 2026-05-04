@@ -80,6 +80,7 @@ namespace Comfy::Studio::Editor
 			const bool isChance = target.Flags.IsChance;
 			const bool isDouble = target.Flags.IsDouble;
 			const bool isLong = target.Flags.IsLong;
+			const bool isLink = target.Flags.IsLink;
 
 			switch (target.Type)
 			{
@@ -110,7 +111,9 @@ namespace Comfy::Studio::Editor
 			case ButtonType::Star:
 				return isDouble ? TargetType::StarW :
 					isLong ? TargetType::StarLong :
-					isChance ? TargetType::ChanceStar : TargetType::Star;
+					isChance ? TargetType::ChanceStar :
+					target.IsLinkStarEnd() ? TargetType::LinkStarEnd :
+					isLink ? TargetType::LinkStar : TargetType::Star;
 			}
 
 			return TargetType::Circle;
