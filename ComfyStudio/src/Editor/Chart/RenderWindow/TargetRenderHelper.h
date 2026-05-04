@@ -127,6 +127,7 @@ namespace Comfy::Studio::Editor
 			bool Chance;
 			bool Double;
 			bool Long;
+			bool Link;
 			vec2 Position;
 			f32 Progress;
 			f32 Scale;
@@ -147,6 +148,7 @@ namespace Comfy::Studio::Editor
 			bool Chance;
 			bool Double;
 			bool Long;
+			bool Link;
 			vec2 Position;
 			f32 Progress;
 			f32 Scale;

@@ -756,6 +756,7 @@ namespace Comfy::Studio::Editor
 				targetData.Chance = target.Flags.IsChance;
 				targetData.Double = target.Flags.IsDouble;
 				targetData.Long = target.Flags.IsLong;
+				targetData.Link = target.Flags.IsLink;
 				targetData.Position = properties.Position;
 				targetData.Progress = progress;
 				targetData.Scale = 1.0f;
@@ -775,6 +776,7 @@ namespace Comfy::Studio::Editor
 							buttonData.Shadow = TargetRenderHelper::ButtonShadowType::Black;
 							buttonData.Position = position;
 							buttonData.Progress = progress;
+							buttonData.Link = true;
 							buttonData.Scale = 1.0f;
 						}
 					}
@@ -791,6 +793,7 @@ namespace Comfy::Studio::Editor
 						buttonData.Chance = targetData.Chance;
 						buttonData.Double = targetData.Double;
 						buttonData.Long = targetData.Long;
+						buttonData.Link = targetData.Link;
 						buttonData.Shadow = TargetRenderHelper::ButtonShadowType::Black;
 						buttonData.Position = GetButtonPathSinePoint(progress, properties);
 						buttonData.Progress = progress;
