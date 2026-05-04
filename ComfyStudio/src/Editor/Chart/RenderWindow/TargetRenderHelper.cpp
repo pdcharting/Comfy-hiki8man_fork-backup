@@ -506,6 +506,13 @@ namespace Comfy::Studio::Editor
 				fontPracticeNumIndex = FindIndexOf(fontMap->Fonts, [](auto& font) { return font.GetFontSize() == ivec2(24, 30); });
 			}
 
+			if (GetFutureIfReady(sprGameNCFuture, sprGameNC) && sprGameNC != nullptr)
+			{
+				renderer.UploadToGPUFreeCPUMemory(*sprGameNC);
+				sprites.LinkLineNormal = findSprite(*sprGameNC, "LINK_LINE_01");
+				sprites.LinkLineGlowy = findSprite(*sprGameNC, "LINK_LINE_02");
+			}
+
 			if (const auto font36 = GetFont36(); font36 != nullptr)
 			{
 				if (font36->Texture == nullptr && !sprFont36->TexSet.Textures.empty())
@@ -1418,6 +1425,69 @@ namespace Comfy::Studio::Editor
 				renderer.Draw(command);
 		}
 
+		void DrawLinkStarLine(Render::Renderer2D& renderer, const LinkStarLineData& data) const
+		{
+			constexpr f32 LineWidth = 48.0f;
+			constexpr f32 LineEdge = LineWidth * 0.375f;
+			constexpr f32 TexturePadding = 12.0f;
+			constexpr vec2 TexRectSize = vec2(144.0f, 32.0f);
+			constexpr vec2 TextureSize = vec2(256.0f, 32.0f);
+
+			const vec2 distance = data.Points[1] - data.Points[0];
+			const vec2 direction = distance / glm::length(distance);
+			vec2 directionRotated = glm::rotate(direction, 1.570796f);
+
+			const vec2 startPosition = data.Points[0] - direction * LineEdge;
+			const vec2 endPosition = data.Points[1] + direction * LineEdge;
+			const vec2 deltaPosition = (endPosition - startPosition) / 18.0f;
+
+			Graphics::Tex* texture = nullptr;
+			vec4 color = {};
+			switch (data.DisplayMode)
+			{
+			case LinkStarDisplayMode::Normal:
+			case LinkStarDisplayMode::Blink:
+				texture = sprGameNC->TexSet.Textures[sprites.LinkLineNormal->TextureIndex].get();
+				color = vec4(1.0f, 1.0f, 1.0f, data.Progress);
+				break;
+			case LinkStarDisplayMode::Darkened:
+				texture = sprGameNC->TexSet.Textures[sprites.LinkLineNormal->TextureIndex].get();
+				color = vec4(0.35f, 0.35f, 0.35f, 1.0f);
+				break;
+			case LinkStarDisplayMode::Glow:
+				texture = sprGameNC->TexSet.Textures[sprites.LinkLineGlowy->TextureIndex].get();
+				color = vec4(1.0f, 1.0f, 1.0f, data.Progress);
+				break;
+			}
+
+			std::array<Render::PositionTextureColorVertex, 20> vertices = {};
+			f32 uv_offset_x = 0.0f;
+			f32 uv_delta_x = (TexRectSize.x - TexturePadding * 2.0f) / 18.0f;
+
+			for (size_t i = 0; i < 20; i += 2)
+			{
+				if (i == 2 || i == 18)
+					uv_offset_x += TexturePadding;
+
+				vertices[i].Position = startPosition + deltaPosition * i + directionRotated * LineWidth;
+				vertices[i].Color = color;
+				vertices[i].TextureCoordinates = vec2(uv_offset_x + uv_delta_x * i, TexRectSize.y) / TextureSize;
+				vertices[i + 1].Position = startPosition + deltaPosition * i - directionRotated * LineWidth;
+				vertices[i + 1].Color = color;
+				vertices[i + 1].TextureCoordinates = vec2(uv_offset_x + uv_delta_x * i, 0.0f) / TextureSize;
+			}
+
+			DrawHackyTrailConnectionFix(renderer);
+			renderer.DrawVertices(
+				vertices.data(),
+				vertices.size(),
+				Render::TexSamplerView(texture),
+				AetBlendMode::Normal,
+				PrimitiveType::TriangleStrip
+			);
+			DrawHackyTrailConnectionFix(renderer);
+		}
+
 		BitmapFont* GetFont36() const
 		{
 			return (sprFont36 == nullptr || fontMap == nullptr) ? nullptr : IndexOrNull(font36Index, fontMap->Fonts);
@@ -1537,6 +1607,7 @@ namespace Comfy::Studio::Editor
 		std::future<std::unique_ptr<SprSet>> sprGameFuture = IO::File::LoadAsync<SprSet>("dev_rom/2d/spr_ps4_game.farc<spr_ps4_game.bin>");
 		std::future<std::unique_ptr<SprSet>> sprFont36Future = IO::File::LoadAsync<SprSet>("dev_rom/2d/spr_fnt_36.farc<spr_fnt_36.bin>");
 		std::future<std::unique_ptr<FontMap>> fontMapFuture = IO::File::LoadAsync<FontMap>("dev_rom/fontmap.farc<fontmap.bin>");
+		std::future<std::unique_ptr<SprSet>> sprGameNCFuture = IO::File::LoadAsync<SprSet>("dev_rom/2d/spr_gam_extra.farc<spr_gam_extra.bin>");
 
 		std::unique_ptr<AetSet> aetGameCommon = nullptr;
 		std::unique_ptr<SprSet> sprGameCommon = nullptr;
@@ -1544,6 +1615,7 @@ namespace Comfy::Studio::Editor
 		std::unique_ptr<SprSet> sprGame = nullptr;
 		std::unique_ptr<SprSet> sprFont36 = nullptr;
 		std::unique_ptr<FontMap> fontMap = nullptr;
+		std::unique_ptr<SprSet> sprGameNC = nullptr;
 		size_t font36Index = std::numeric_limits<size_t>::max();
 		size_t fontPracticeNumIndex = std::numeric_limits<size_t>::max();
 
@@ -1719,6 +1791,9 @@ namespace Comfy::Studio::Editor
 			std::array<Spr*, EnumCount<ButtonType>()>
 				SyncInfoHoldButtonIcons;
 
+			Spr* LinkLineNormal;
+			Spr* LinkLineGlowy;
+
 		} sprites = {};
 	};
 
@@ -1821,6 +1896,11 @@ namespace Comfy::Studio::Editor
 	void TargetRenderHelper::DrawButtonPairSyncLines(Render::Renderer2D& renderer, const ButtonSyncLineData& data) const
 	{
 		impl->DrawButtonPairSyncLines(renderer, data);
+	}
+
+	void TargetRenderHelper::DrawLinkStarLine(Render::Renderer2D& renderer, const LinkStarLineData& data) const
+	{
+		impl->DrawLinkStarLine(renderer, data);
 	}
 
 	const Graphics::BitmapFont* TargetRenderHelper::TryGetFont36() const

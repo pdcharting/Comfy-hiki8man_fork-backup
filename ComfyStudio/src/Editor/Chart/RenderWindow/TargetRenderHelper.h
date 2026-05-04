@@ -185,6 +185,23 @@ namespace Comfy::Studio::Editor
 
 		void DrawButtonPairSyncLines(Render::Renderer2D& renderer, const ButtonSyncLineData& data) const;
 
+		struct LinkStarLineData
+		{
+			enum class Mode : u8
+			{
+				Blink    = 1,
+				Glow     = 2,
+				Darkened = 3,
+				Normal   = 4,
+			};
+
+			Mode DisplayMode;
+			f32 Progress;
+			std::array<vec2, 2> Points;
+		};
+
+		void DrawLinkStarLine(Render::Renderer2D& renderer, const LinkStarLineData& data) const;
+
 	private:
 		const Graphics::BitmapFont* TryGetFont36() const;
 
@@ -192,4 +209,6 @@ namespace Comfy::Studio::Editor
 		struct Impl;
 		std::unique_ptr<Impl> impl;
 	};
+
+	using LinkStarDisplayMode = TargetRenderHelper::LinkStarLineData::Mode;
 }

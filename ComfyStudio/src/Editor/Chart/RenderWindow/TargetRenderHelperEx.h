@@ -22,6 +22,7 @@ namespace Comfy::Studio::Editor
 		TargetRenderHelper::ButtonData& EmplaceButton();
 		TargetRenderHelper::ButtonTrailData& EmplaceButtonTrail();
 		TargetRenderHelper::ButtonSyncLineData& EmplaceSyncLine();
+		TargetRenderHelper::LinkStarLineData& EmplaceLinkStarLine();
 		void Flush(Render::Renderer2D& renderer, TargetRenderHelper& renderHelper, TargetRenderHelperExFlushFlags flags = TargetRenderHelperExFlushFlags_None);
 
 		void ConstructButtonTrail(TargetRenderHelper::ButtonTrailData& outData, ButtonType type, f32 progressClamped, f32 progressUnbound, const TargetProperties& properties, TimeSpan flyDuration, bool chance = false);
@@ -38,5 +39,6 @@ namespace Comfy::Studio::Editor
 		std::vector<TargetRenderHelper::ButtonData> buttons;
 		std::vector<TargetRenderHelper::ButtonTrailData> trails;
 		std::vector<TargetRenderHelper::ButtonSyncLineData> syncLines;
+		std::vector<TargetRenderHelper::LinkStarLineData> linkStarLines;
 	};
 }

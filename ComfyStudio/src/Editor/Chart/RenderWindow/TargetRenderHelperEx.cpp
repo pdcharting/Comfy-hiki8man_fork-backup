@@ -33,6 +33,11 @@ namespace Comfy::Studio::Editor
 		return syncLines.emplace_back();
 	}
 
+	TargetRenderHelper::LinkStarLineData& TargetRenderHelperEx::EmplaceLinkStarLine()
+	{
+		return linkStarLines.emplace_back();
+	}
+
 	void TargetRenderHelperEx::Flush(Render::Renderer2D& renderer, TargetRenderHelper& renderHelper, TargetRenderHelperExFlushFlags flags)
 	{
 		if (!(flags & TargetRenderHelperExFlushFlags_NoButtons))
@@ -49,6 +54,9 @@ namespace Comfy::Studio::Editor
 
 		if (!(flags & TargetRenderHelperExFlushFlags_NoTargets))
 		{
+			for (const auto& data : linkStarLines)
+				renderHelper.DrawLinkStarLine(renderer, data);
+
 			auto checkDrawTargetAndAppear = [&](const TargetAndAppearPair& data)
 			{
 				renderHelper.DrawTarget(renderer, data.Target);
@@ -96,6 +104,7 @@ namespace Comfy::Studio::Editor
 		buttons.clear();
 		trails.clear();
 		syncLines.clear();
+		linkStarLines.clear();
 	}
 
 	void TargetRenderHelperEx::ConstructButtonTrail(TargetRenderHelper::ButtonTrailData& outData, ButtonType type, f32 progressClamped, f32 progressUnbound, const TargetProperties& properties, TimeSpan flyDuration, bool chance)
