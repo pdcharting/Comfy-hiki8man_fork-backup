@@ -231,7 +231,7 @@ namespace Comfy::Studio::Editor
 
 	TimelineTarget* SortedTargetList::Find(TimelineTargetID id)
 	{
-		const TimelineTarget* target = Find(id);
+		const TimelineTarget* target = const_cast<const SortedTargetList*>(this)->Find(id);
 		return const_cast<TimelineTarget*>(target);
 	}
 
