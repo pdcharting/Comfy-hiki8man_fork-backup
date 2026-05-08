@@ -396,7 +396,14 @@ namespace Comfy::Studio::Editor
 				registerTypeLayer(ButtonType::Cross,    "button_batsu_long",   layers.ButtonsLong);
 				registerTypeLayer(ButtonType::Square,   "button_shikaku_long", layers.ButtonsLong);
 
-				videos.TargetHand = findVideo(*aetGameCommon, "GAM_CMN_TARGET_HAND");
+				videos.TargetHands.push_back(findVideo(*aetGameCommon, "GAM_CMN_TARGET_HAND"));
+				videos.TargetHands.push_back(findVideo(*aetGameCommon, "GAM_CMN_PS_TARGET_HAND_UP"));
+				videos.TargetHands.push_back(findVideo(*aetGameCommon, "GAM_CMN_PS_TARGET_HAND_RIGHT"));
+				videos.TargetHands.push_back(findVideo(*aetGameCommon, "GAM_CMN_PS_TARGET_HAND_DOWN"));
+				videos.TargetHands.push_back(findVideo(*aetGameCommon, "GAM_CMN_PS_TARGET_HAND_LEFT"));
+				videos.TargetHands.push_back(findVideo(*aetGameCommon, "GAM_CMN_N_TARGET_HAND"));
+				videos.TargetHands.push_back(findVideo(*aetGameCommon, "GAM_CMN_N_TARGET_HAND_TOUCH"));
+				videos.TargetHands.push_back(findVideo(*aetGameCommon, "GAM_CMN_N_LINK_TOUCH_HAND"));
 			}
 
 			if (GetFutureIfReady(sprGameCommonFuture, sprGameCommon) && sprGameCommon != nullptr)
@@ -510,6 +517,7 @@ namespace Comfy::Studio::Editor
 			{
 				layers.TargetsLink[static_cast<i32>(ButtonType::Star)] = findLayer(*aetGameNC, "target_link");
 				layers.ButtonsLink[static_cast<i32>(ButtonType::Star)] = findLayer(*aetGameNC, "button_link");
+				videos.TargetHands.push_back(findVideo(*aetGameNC, "GAM_EXTRA_N_LINK_TOUCH_HAND"));
 			}
 
 			if (GetFutureIfReady(sprGameNCFuture, sprGameNC) && sprGameNC != nullptr)
@@ -854,7 +862,7 @@ namespace Comfy::Studio::Editor
 		{
 			auto push = [&](Aet::Layer& layer)
 			{
-				if (layer.GetVideoItem().get() == videos.TargetHand.get())
+				if (std::count(videos.TargetHands.begin(), videos.TargetHands.end(), layer.GetVideoItem()))
 				{
 					tempLayerVisibleBackupStack.push(layer.Flags.VideoActive);
 					layer.Flags.VideoActive = false;
@@ -874,7 +882,7 @@ namespace Comfy::Studio::Editor
 		{
 			auto pop = [&](Aet::Layer& layer)
 			{
-				if (layer.GetVideoItem().get() == videos.TargetHand.get())
+				if (std::count(videos.TargetHands.begin(), videos.TargetHands.end(), layer.GetVideoItem()))
 				{
 					layer.Flags.VideoActive = tempLayerVisibleBackupStack.top();
 					tempLayerVisibleBackupStack.pop();
@@ -1767,8 +1775,7 @@ namespace Comfy::Studio::Editor
 
 		struct VideoCache
 		{
-			std::shared_ptr<Aet::Video>
-				TargetHand;
+			std::vector<std::shared_ptr<Aet::Video>> TargetHands;
 
 			std::array<std::shared_ptr<Aet::Video>, 4>
 				ComboNumberDigitPlaceholders;
