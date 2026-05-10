@@ -396,7 +396,14 @@ namespace Comfy::Studio::Editor
 				registerTypeLayer(ButtonType::Cross,    "button_batsu_long",   layers.ButtonsLong);
 				registerTypeLayer(ButtonType::Square,   "button_shikaku_long", layers.ButtonsLong);
 
-				videos.TargetHand = findVideo(*aetGameCommon, "GAM_CMN_TARGET_HAND");
+				videos.TargetHands.push_back(findVideo(*aetGameCommon, "GAM_CMN_TARGET_HAND"));
+				videos.TargetHands.push_back(findVideo(*aetGameCommon, "GAM_CMN_PS_TARGET_HAND_UP"));
+				videos.TargetHands.push_back(findVideo(*aetGameCommon, "GAM_CMN_PS_TARGET_HAND_RIGHT"));
+				videos.TargetHands.push_back(findVideo(*aetGameCommon, "GAM_CMN_PS_TARGET_HAND_DOWN"));
+				videos.TargetHands.push_back(findVideo(*aetGameCommon, "GAM_CMN_PS_TARGET_HAND_LEFT"));
+				videos.TargetHands.push_back(findVideo(*aetGameCommon, "GAM_CMN_N_TARGET_HAND"));
+				videos.TargetHands.push_back(findVideo(*aetGameCommon, "GAM_CMN_N_TARGET_HAND_TOUCH"));
+				videos.TargetHands.push_back(findVideo(*aetGameCommon, "GAM_CMN_N_LINK_TOUCH_HAND"));
 			}
 
 			if (GetFutureIfReady(sprGameCommonFuture, sprGameCommon) && sprGameCommon != nullptr)
@@ -506,6 +513,21 @@ namespace Comfy::Studio::Editor
 				fontPracticeNumIndex = FindIndexOf(fontMap->Fonts, [](auto& font) { return font.GetFontSize() == ivec2(24, 30); });
 			}
 
+			if (GetFutureIfReady(aetGameNCFuture, aetGameNC) && aetGameNC != nullptr)
+			{
+				layers.TargetsLink[static_cast<i32>(ButtonType::Star)] = findLayer(*aetGameNC, "target_link");
+				layers.ButtonsLink[static_cast<i32>(ButtonType::Star)] = findLayer(*aetGameNC, "button_link");
+				videos.TargetHands.push_back(findVideo(*aetGameNC, "GAM_EXTRA_N_LINK_TOUCH_HAND"));
+			}
+
+			if (GetFutureIfReady(sprGameNCFuture, sprGameNC) && sprGameNC != nullptr)
+			{
+				renderer.UploadToGPUFreeCPUMemory(*sprGameNC);
+				sprites.LinkLineNormal = findSprite(*sprGameNC, "LINK_LINE_01");
+				sprites.LinkLineGlowy = findSprite(*sprGameNC, "LINK_LINE_02");
+				sprites.LinkLineDarkened = findSprite(*sprGameNC, "LINK_LINE_01_OFF");
+			}
+
 			if (const auto font36 = GetFont36(); font36 != nullptr)
 			{
 				if (font36->Texture == nullptr && !sprFont36->TexSet.Textures.empty())
@@ -536,6 +558,9 @@ namespace Comfy::Studio::Editor
 					return result;
 
 				if (auto result = Render::SprSetNameStringSprGetterExact(source, sprGame.get()); result)
+					return result;
+
+				if (auto result = Render::SprSetNameStringSprGetter(source, sprGameNC.get()); result)
 					return result;
 
 				return Render::NullSprGetter(source);
@@ -837,7 +862,7 @@ namespace Comfy::Studio::Editor
 		{
 			auto push = [&](Aet::Layer& layer)
 			{
-				if (layer.GetVideoItem().get() == videos.TargetHand.get())
+				if (std::count(videos.TargetHands.begin(), videos.TargetHands.end(), layer.GetVideoItem()))
 				{
 					tempLayerVisibleBackupStack.push(layer.Flags.VideoActive);
 					layer.Flags.VideoActive = false;
@@ -857,7 +882,7 @@ namespace Comfy::Studio::Editor
 		{
 			auto pop = [&](Aet::Layer& layer)
 			{
-				if (layer.GetVideoItem().get() == videos.TargetHand.get())
+				if (std::count(videos.TargetHands.begin(), videos.TargetHands.end(), layer.GetVideoItem()))
 				{
 					layer.Flags.VideoActive = tempLayerVisibleBackupStack.top();
 					tempLayerVisibleBackupStack.pop();
@@ -1070,6 +1095,9 @@ namespace Comfy::Studio::Editor
 				if (data.HoldText)
 					return layers.TargetsHold;
 
+				if (data.Link)
+					return layers.TargetsLink;
+
 				return layers.Targets;
 			};
 
@@ -1086,6 +1114,10 @@ namespace Comfy::Studio::Editor
 			auto transform = Transform2D(data.Position);
 			transform.Scale = vec2(data.Scale);
 			transform.Opacity = data.Opacity;
+
+			// NOTE: The NC AetSet file is in 1280x720 resolution mode
+			if (data.Link)
+				transform.Scale *= 1.5f;
 
 			constexpr auto layerFrameScale = 360.0f;
 			renderer.Aet().DrawLayer(*layer, data.Progress * layerFrameScale, transform);
@@ -1110,6 +1142,9 @@ namespace Comfy::Studio::Editor
 				if (data.Chain && !data.ChainStart)
 					return data.Sync ? layers.ButtonsFragSync : layers.ButtonsFrag;
 
+				if (data.Link)
+					return layers.ButtonsLink;
+
 				return data.Sync ? layers.ButtonsSync : layers.Buttons;
 			};
 
@@ -1122,6 +1157,10 @@ namespace Comfy::Studio::Editor
 
 			auto transform = Transform2D(data.Position);
 			transform.Scale = vec2(data.Scale);
+
+			// NOTE: The NC AetSet file is in 1280x720 resolution mode
+			if (data.Link)
+				transform.Scale *= 1.5f;
 
 			constexpr auto layerFrameScale = 360.0f;
 			renderer.Aet().DrawLayer(*layer, (data.Progress * layerFrameScale), transform);
@@ -1418,6 +1457,69 @@ namespace Comfy::Studio::Editor
 				renderer.Draw(command);
 		}
 
+		void DrawLinkStarLine(Render::Renderer2D& renderer, const LinkStarLineData& data) const
+		{
+			constexpr f32 LineWidth = 48.0f;
+			constexpr f32 LineEdge = LineWidth * 0.375f;
+			constexpr f32 TexturePadding = 12.0f;
+			constexpr vec2 TexRectSize = vec2(144.0f, 32.0f);
+			constexpr vec2 TextureSize = vec2(256.0f, 32.0f);
+
+			const vec2 distance = data.Points[1] - data.Points[0];
+			const vec2 direction = distance / glm::length(distance);
+			vec2 directionRotated = glm::rotate(direction, 1.570796f);
+
+			const vec2 startPosition = data.Points[0] - direction * LineEdge;
+			const vec2 endPosition = data.Points[1] + direction * LineEdge;
+			const vec2 deltaPosition = (endPosition - startPosition) / 18.0f;
+
+			Graphics::Tex* texture = nullptr;
+			vec4 color = {};
+			switch (data.DisplayMode)
+			{
+			case LinkStarDisplayMode::Normal:
+			case LinkStarDisplayMode::Blink:
+				texture = sprGameNC->TexSet.Textures[sprites.LinkLineNormal->TextureIndex].get();
+				color = vec4(1.0f, 1.0f, 1.0f, data.Progress);
+				break;
+			case LinkStarDisplayMode::Darkened:
+				texture = sprGameNC->TexSet.Textures[sprites.LinkLineDarkened->TextureIndex].get();
+				color = vec4(0.75f, 0.75f, 0.75f, 1.0f);
+				break;
+			case LinkStarDisplayMode::Glow:
+				texture = sprGameNC->TexSet.Textures[sprites.LinkLineGlowy->TextureIndex].get();
+				color = vec4(1.0f, 1.0f, 1.0f, data.Progress);
+				break;
+			}
+
+			std::array<Render::PositionTextureColorVertex, 20> vertices = {};
+			f32 uv_offset_x = 0.0f;
+			f32 uv_delta_x = (TexRectSize.x - TexturePadding * 2.0f) / 18.0f;
+
+			for (size_t i = 0; i < 20; i += 2)
+			{
+				if (i == 2 || i == 18)
+					uv_offset_x += TexturePadding;
+
+				vertices[i].Position = startPosition + deltaPosition * i + directionRotated * LineWidth;
+				vertices[i].Color = color;
+				vertices[i].TextureCoordinates = vec2(uv_offset_x + uv_delta_x * i, TexRectSize.y) / TextureSize;
+				vertices[i + 1].Position = startPosition + deltaPosition * i - directionRotated * LineWidth;
+				vertices[i + 1].Color = color;
+				vertices[i + 1].TextureCoordinates = vec2(uv_offset_x + uv_delta_x * i, 0.0f) / TextureSize;
+			}
+
+			DrawHackyTrailConnectionFix(renderer);
+			renderer.DrawVertices(
+				vertices.data(),
+				vertices.size(),
+				Render::TexSamplerView(texture),
+				AetBlendMode::Normal,
+				PrimitiveType::TriangleStrip
+			);
+			DrawHackyTrailConnectionFix(renderer);
+		}
+
 		BitmapFont* GetFont36() const
 		{
 			return (sprFont36 == nullptr || fontMap == nullptr) ? nullptr : IndexOrNull(font36Index, fontMap->Fonts);
@@ -1537,6 +1639,8 @@ namespace Comfy::Studio::Editor
 		std::future<std::unique_ptr<SprSet>> sprGameFuture = IO::File::LoadAsync<SprSet>("dev_rom/2d/spr_ps4_game.farc<spr_ps4_game.bin>");
 		std::future<std::unique_ptr<SprSet>> sprFont36Future = IO::File::LoadAsync<SprSet>("dev_rom/2d/spr_fnt_36.farc<spr_fnt_36.bin>");
 		std::future<std::unique_ptr<FontMap>> fontMapFuture = IO::File::LoadAsync<FontMap>("dev_rom/fontmap.farc<fontmap.bin>");
+		std::future<std::unique_ptr<AetSet>> aetGameNCFuture = IO::File::LoadAsync<AetSet>("dev_rom/2d/aet_gam_extra.bin");
+		std::future<std::unique_ptr<SprSet>> sprGameNCFuture = IO::File::LoadAsync<SprSet>("dev_rom/2d/spr_gam_extra.farc<spr_gam_extra.bin>");
 
 		std::unique_ptr<AetSet> aetGameCommon = nullptr;
 		std::unique_ptr<SprSet> sprGameCommon = nullptr;
@@ -1544,6 +1648,8 @@ namespace Comfy::Studio::Editor
 		std::unique_ptr<SprSet> sprGame = nullptr;
 		std::unique_ptr<SprSet> sprFont36 = nullptr;
 		std::unique_ptr<FontMap> fontMap = nullptr;
+		std::unique_ptr<AetSet> aetGameNC = nullptr;
+		std::unique_ptr<SprSet> sprGameNC = nullptr;
 		size_t font36Index = std::numeric_limits<size_t>::max();
 		size_t fontPracticeNumIndex = std::numeric_limits<size_t>::max();
 
@@ -1636,6 +1742,7 @@ namespace Comfy::Studio::Editor
 				TargetsChanceSyncHold,
 				TargetsDouble,
 				TargetsLong,
+				TargetsLink,
 				Buttons,
 				ButtonsFrag,
 				ButtonsSync,
@@ -1646,7 +1753,8 @@ namespace Comfy::Studio::Editor
 				ButtonShadowsWhite,
 				ButtonShadowsWhiteFrag,
 				ButtonsDouble,
-				ButtonsLong;
+				ButtonsLong,
+				ButtonsLink;
 
 			std::shared_ptr<Aet::Layer>
 				PracticeLevelInfoEasy,
@@ -1667,8 +1775,7 @@ namespace Comfy::Studio::Editor
 
 		struct VideoCache
 		{
-			std::shared_ptr<Aet::Video>
-				TargetHand;
+			std::vector<std::shared_ptr<Aet::Video>> TargetHands;
 
 			std::array<std::shared_ptr<Aet::Video>, 4>
 				ComboNumberDigitPlaceholders;
@@ -1718,6 +1825,10 @@ namespace Comfy::Studio::Editor
 
 			std::array<Spr*, EnumCount<ButtonType>()>
 				SyncInfoHoldButtonIcons;
+
+			Spr* LinkLineNormal;
+			Spr* LinkLineGlowy;
+			Spr* LinkLineDarkened;
 
 		} sprites = {};
 	};
@@ -1821,6 +1932,11 @@ namespace Comfy::Studio::Editor
 	void TargetRenderHelper::DrawButtonPairSyncLines(Render::Renderer2D& renderer, const ButtonSyncLineData& data) const
 	{
 		impl->DrawButtonPairSyncLines(renderer, data);
+	}
+
+	void TargetRenderHelper::DrawLinkStarLine(Render::Renderer2D& renderer, const LinkStarLineData& data) const
+	{
+		impl->DrawLinkStarLine(renderer, data);
 	}
 
 	const Graphics::BitmapFont* TargetRenderHelper::TryGetFont36() const

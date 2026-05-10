@@ -1904,6 +1904,7 @@ namespace Comfy::Studio::Editor
 
 				static constexpr std::array<const char*, EnumCount<ButtonType>()> buttonNames = { "Triangle", "Square", "Cross", "Circle", "Slide Left", "Slide Right", "Star",};
 
+
 				char comboPreview[64]; comboPreview[0] = '\0';
 				if (binding.ButtonTypes != ButtonTypeFlags_None)
 				{

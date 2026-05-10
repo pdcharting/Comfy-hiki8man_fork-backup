@@ -265,6 +265,7 @@ namespace Comfy::Studio::Editor
 			if (selectedTool != nullptr)
 				selectedTool->PreRender(*workingChart, renderer);
 
+			RenderAllVisibleLinkLines();
 			RenderAllVisibleTargets();
 
 			if (selectedTool != nullptr)
@@ -547,6 +548,150 @@ namespace Comfy::Studio::Editor
 		}
 	}
 
+	std::tuple<bool, vec2> TargetRenderWindow::CalculateLinkStarButtonPosition(const TimelineTarget& target, const TimelineTarget& prev)
+	{
+		auto [currTargetTime, currButtonTime, currTargetTick, currButtonTick, currFlyingTime] = workingChart->TempoMap.GetTargetSpawnTimes(target);
+		auto [prevTargetTime, prevButtonTime, prevTargetTick, prevButtonTick, prevFlyingTime] = workingChart->TempoMap.GetTargetSpawnTimes(prev);
+		BeatTick cursorTick = timeline.GetCursorTick();
+		TimeSpan cursorTime = timeline.GetCursorTime();
+		auto currProperties = Rules::TryGetProperties(target);
+		auto prevProperties = Rules::TryGetProperties(prev);
+
+		TimeSpan length = currButtonTime - prevButtonTime;
+		TimeSpan currentTime = cursorTime - prevButtonTime;
+		f64 progress = Clamp(currentTime / length, 0.0, 1.0);
+		vec2 deltaPosition = currProperties.Position - prevProperties.Position;
+		vec2 position = prevProperties.Position + deltaPosition * progress;
+
+		if (cursorTick > prevButtonTick && cursorTick <= currButtonTick)
+			return std::make_tuple(true, position);
+		return std::make_tuple(false, position);
+	}
+
+	void TargetRenderWindow::RenderAllVisibleLinkLines()
+	{
+		struct LinkStarData
+		{
+			TimeSpan TargetTime;
+			TimeSpan ButtonTime;
+			bool IsSelected;
+			TargetProperties Properties;
+			const TimelineTarget* Target;
+
+			LinkStarData(TimeSpan targetTime, TimeSpan buttonTime, const TimelineTarget* target)
+				: TargetTime(targetTime), ButtonTime(buttonTime), Target(target)
+			{
+				IsSelected = target->IsSelected;
+				Properties = Rules::TryGetProperties(*target);
+			}
+		};
+
+		struct LinkChainData
+		{
+			TimeSpan StartTime;
+			TimeSpan EndTime;
+			TimeSpan MaxTime;
+			bool AnySelected;
+			std::vector<LinkStarData> LinkStars;
+		};
+
+		constexpr TimeSpan FadeInLengthInSeconds = TimeSpan(0.3);
+		constexpr TimeSpan GlowFadeLengthInSeconds = TimeSpan(0.2);
+		constexpr TimeSpan GlowMaxLengthInSeconds = TimeSpan(0.3);
+		constexpr TimeSpan GlowMaxStartOffset = GlowFadeLengthInSeconds;
+		constexpr TimeSpan GlowFadeOutOffset = GlowMaxStartOffset + GlowMaxLengthInSeconds;
+		constexpr TimeSpan TotalGlowLengthInSeconds = GlowFadeLengthInSeconds * 2 + GlowMaxLengthInSeconds;
+		TimeSpan cursorTime = timeline.GetCursorTime();
+
+		// NOTE: Pre-parse chains for easier calculations of link star lines data
+		std::vector<LinkChainData> chains;
+		LinkChainData chain = {};
+		for (const auto& target : workingChart->Targets)
+		{
+			if (!target.Flags.IsLink)
+				continue;
+
+			auto [targetTime, buttonTime, targetTick, buttonTick, flyingTime] = workingChart->TempoMap.GetTargetSpawnTimes(target);
+
+			if (target.IsSelected)
+				chain.AnySelected = true;
+
+			chain.LinkStars.emplace_back(targetTime, buttonTime, &target);
+
+			if (target.IsLinkStarStart())
+				chain.StartTime = targetTime;
+			else if (target.IsLinkStarEnd())
+			{
+				chain.EndTime = buttonTime;
+				chain.MaxTime = buttonTime + TotalGlowLengthInSeconds;
+				chains.push_back(chain);
+				chain = {};
+			}
+		}
+
+		for (const auto& chain : chains)
+		{
+			if (!chain.AnySelected && (cursorTime < chain.StartTime || cursorTime > chain.MaxTime))
+				continue;
+
+			// NOTE: The last link star in a chain doesn't have a line going
+			//       forward so we don't need to process it individually; therefore
+			//       here we can loop until [size() - 1].
+			for (size_t i = 0; i < chain.LinkStars.size() - 1; i++)
+			{
+				const LinkStarData* prev = i > 0 ? &chain.LinkStars[i - 1] : nullptr;
+				const LinkStarData& curr = chain.LinkStars[i];
+				const LinkStarData& next = chain.LinkStars[i + 1];
+				TargetRenderHelper::LinkStarLineData& lineData = renderHelperEx.EmplaceLinkStarLine();
+
+				if (chain.AnySelected)
+				{
+					lineData.DisplayMode =
+						curr.IsSelected || next.IsSelected
+						? LinkStarDisplayMode::Blink
+						: LinkStarDisplayMode::Darkened;
+					lineData.Points[0] = curr.Properties.Position;
+					lineData.Points[1] = next.Properties.Position;
+					lineData.Progress = 1.0f;
+					continue;
+				}
+
+				if (cursorTime >= chain.EndTime)
+				{
+					lineData.DisplayMode = LinkStarDisplayMode::Glow;
+					lineData.Points[0] = curr.Properties.Position;
+					lineData.Points[1] = next.Properties.Position;
+
+					TimeSpan timeSinceEnd = cursorTime - chain.EndTime;
+					if (timeSinceEnd >= GlowFadeOutOffset)
+						lineData.Progress = 1.0f - Clamp((timeSinceEnd - GlowFadeOutOffset) / GlowFadeLengthInSeconds, 0.0, 1.0);
+					else if (timeSinceEnd >= GlowMaxStartOffset)
+						lineData.Progress = 1.0f;
+					else
+						lineData.Progress = Clamp(timeSinceEnd / GlowFadeLengthInSeconds, 0.0, 1.0);
+				}
+				else if (cursorTime >= curr.TargetTime && cursorTime >= next.TargetTime)
+				{
+					if (cursorTime < curr.ButtonTime)
+					{
+						lineData.DisplayMode = LinkStarDisplayMode::Normal;
+						lineData.Points[0] = curr.Properties.Position;
+						lineData.Points[1] = next.Properties.Position;
+						lineData.Progress = Clamp((cursorTime - next.TargetTime) / FadeInLengthInSeconds, 0.0, 1.0);
+					}
+					else if (cursorTime >= curr.ButtonTime)
+					{
+						auto [isVisible, buttonPosition] = CalculateLinkStarButtonPosition(*curr.Target, *next.Target);
+						lineData.DisplayMode = LinkStarDisplayMode::Normal;
+						lineData.Points[0] = buttonPosition;
+						lineData.Points[1] = next.Properties.Position;
+						lineData.Progress = 1.0f;
+					}
+				}
+			}
+		}
+	}
+
 	void TargetRenderWindow::RenderAllVisibleTargets()
 	{
 		AddVisibleTargetsToDrawBuffers();
@@ -611,12 +756,32 @@ namespace Comfy::Studio::Editor
 				targetData.Chance = target.Flags.IsChance;
 				targetData.Double = target.Flags.IsDouble;
 				targetData.Long = target.Flags.IsLong;
+				targetData.Link = target.Flags.IsLink;
 				targetData.Position = properties.Position;
 				targetData.Progress = progress;
 				targetData.Scale = 1.0f;
 				targetData.Opacity = (target.IsSelected || !inCursorBarRange) ? 0.5f : 1.0f;
 
-				if (inCursorBarRange)
+				if (target.Flags.IsLink && !target.IsLinkStarStart())
+				{
+					const TimelineTarget* prevTarget = targets.Find(target.PreviousID);
+					if (prevTarget != nullptr)
+					{
+						auto [isVisible, position] = CalculateLinkStarButtonPosition(target, *prevTarget);
+						if (isVisible)
+						{
+							auto& buttonData = renderHelperEx.EmplaceButton();
+							buttonData = {};
+							buttonData.Type = targetData.Type;
+							buttonData.Shadow = TargetRenderHelper::ButtonShadowType::Black;
+							buttonData.Position = position;
+							buttonData.Progress = progress;
+							buttonData.Link = true;
+							buttonData.Scale = 1.0f;
+						}
+					}
+				}
+				else if (inCursorBarRange)
 				{
 					if (dispButton)
 					{
@@ -628,6 +793,7 @@ namespace Comfy::Studio::Editor
 						buttonData.Chance = targetData.Chance;
 						buttonData.Double = targetData.Double;
 						buttonData.Long = targetData.Long;
+						buttonData.Link = targetData.Link;
 						buttonData.Shadow = TargetRenderHelper::ButtonShadowType::Black;
 						buttonData.Position = GetButtonPathSinePoint(progress, properties);
 						buttonData.Progress = progress;

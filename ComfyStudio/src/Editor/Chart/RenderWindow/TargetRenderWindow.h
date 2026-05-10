@@ -69,6 +69,8 @@ namespace Comfy::Studio::Editor
 		void RenderBackground();
 		void RenderHUDBackground();
 		void RenderSyncHoldInfoBackground();
+		std::tuple<bool, vec2> CalculateLinkStarButtonPosition(const TimelineTarget& target, const TimelineTarget& prev);
+		void RenderAllVisibleLinkLines();
 		void RenderAllVisibleTargets();
 		void AddVisibleTargetsToDrawBuffers();
 

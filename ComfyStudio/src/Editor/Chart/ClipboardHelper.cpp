@@ -39,7 +39,7 @@ namespace Comfy::Studio::Editor
 
 			char b[2048];
 			buffer += std::string_view(b, sprintf_s(b,
-				"\nTarget { %d %d %d %d %d %d %d %d %d %d %d %.2f %.2f %.2f %.2f %.2f %.2f };",
+				"\nTarget { %d %d %d %d %d %d %d %d %d %d %d %d %d %.2f %.2f %.2f %.2f %.2f %.2f };",
 				static_cast<i32>(target.Tick.Ticks()),
 				static_cast<i32>(target.Type),
 				static_cast<i32>(flags.HasProperties),
@@ -48,6 +48,8 @@ namespace Comfy::Studio::Editor
 				static_cast<i32>(flags.IsChance),
 				static_cast<i32>(flags.IsDouble),
 				static_cast<i32>(flags.IsLong),
+				static_cast<i32>(flags.IsLink),
+				0, // FOR THE FUTURE: IsRush
 				static_cast<i32>(target.ID), // Reference ID
 				static_cast<i32>(target.PreviousID),
 				static_cast<i32>(target.NextID),
@@ -104,6 +106,8 @@ namespace Comfy::Studio::Editor
 				newTarget.Flags.IsChance = parseI32(); advanceWord();
 				newTarget.Flags.IsDouble = parseI32(); advanceWord();
 				newTarget.Flags.IsLong = parseI32(); advanceWord();
+				newTarget.Flags.IsLink = parseI32(); advanceWord();
+				advanceWord(); // IsRush
 				newTarget.ReferenceID = static_cast<TimelineTargetID>(parseI32()); advanceWord();
 				newTarget.PreviousID = static_cast<TimelineTargetID>(parseI32()); advanceWord();
 				newTarget.NextID = static_cast<TimelineTargetID>(parseI32()); advanceWord();
